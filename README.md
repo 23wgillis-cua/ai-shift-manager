@@ -21,16 +21,6 @@ Shift supervisors and managers in security, healthcare, facilities, and other 24
 - Supervisor can approve a shift swap and trigger automatic notifications
 - App is deployed live on AWS with a working login
 
-## MVP Scope (Minimum Viable Product)
-
-One core loop, nothing else:
-
-1. **Manager types a plain-English note** ("Mike has a funeral Wednesday and can't come to work")
-2. **Manager approves the swap** (picks who covers)
-3. **App emails the people who need to know**
-
-Everything else is roadmap.
-
 ## Tech Stack
 
 - Backend: Python (Flask)
