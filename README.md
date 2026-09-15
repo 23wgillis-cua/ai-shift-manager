@@ -12,7 +12,7 @@ A web app where a supervisor types a plain-English note ("Mike has a funeral Wed
 
 ## Target User
 
-Shift supervisors and managers in security, healthcare, facilities, and other 24/7 operations.
+Shift supervisors and managers in security, healthcare, facilities, and other operations that require shift work.
 
 ## Success Criteria
 
