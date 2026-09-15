@@ -23,31 +23,13 @@ Shift supervisors and managers in security, healthcare, facilities, and other 24
 
 ## MVP Scope (Minimum Viable Product)
 
-The full platform includes note logging, AI suggestions, notifications, subscription billing, and security hardening. For the prototype, we are building only the core loop:
+One core loop, nothing else:
 
 1. **Manager types a plain-English note** ("Mike has a funeral Wednesday and can't come to work")
-2. **AI parses the note into a structured constraint** (employee, date, status, reason) and logs it
-3. **System shows who is available** for the affected shift based on logged constraints and employee preferences
-4. **Manager approves a swap** by selecting from the suggested available employees
-5. **App fires off notifications** (email) to everyone who needs to know about the change
+2. **Manager approves the swap** (picks who covers)
+3. **App emails the people who need to know**
 
-Everything else (subscription billing, multi-site support, SMS alerts, role-based access control, audit logs) is roadmap, not week-one build.
-
-### MVP Data Model
-
-- **Employees**: name, role, contact info, availability preferences (e.g., "takes kids to practice Wednesdays at 3")
-- **Shifts**: date, start time, end time, assigned employee, role required
-- **Constraints**: employee, date, type (unavailable, preference), reason, source note (raw text)
-- **Notifications**: recipient, message, sent status, timestamp
-
-### What Is Not in the MVP
-
-- No subscription billing
-- No multi-organization support
-- No SMS notifications (email only for the prototype)
-- No advanced reporting or analytics
-- No mobile app (web only)
-- No real authentication system beyond a working login
+Everything else is roadmap.
 
 ## Tech Stack
 
