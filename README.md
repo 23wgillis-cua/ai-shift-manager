@@ -1,5 +1,7 @@
 # AI Shift Manager
 
+![CI](https://github.com/23wgillis-cua/ai-shift-manager/actions/workflows/ci.yml/badge.svg)
+
 **Live app:** http://ai-shift-manager.us-east-1.elasticbeanstalk.com
 
 **Tech stack:** Python (Flask), SQLite, AWS SES, AWS Elastic Beanstalk, GitHub
