@@ -32,9 +32,33 @@ Shift supervisors and managers in security, healthcare, facilities, and other 24
 - Backend: Python (Flask)
 - Database: SQLite (prototype), PostgreSQL (production)
 - Frontend: HTML/CSS/JavaScript
-- AI: LLM API for natural language to structured data parsing
-- Hosting: AWS Free Tier
+- AI: AWS Bedrock (Llama 3 8B) for note parsing and coverage recommendations, with regex fallback
+- Email: AWS SES for swap approval notifications
+- Hosting: AWS Elastic Beanstalk (t3.micro, Free Tier)
 - Version Control: GitHub (this repo)
+- CI: GitHub Actions (pytest on every push)
+
+## Architecture
+
+```
+Browser
+  |
+  v
+nginx (port 80)
+  |
+  v
+Flask App (gunicorn, port 8000)
+  |
+  +-- SQLite (shiftmanager.db)
+  |     users, notes, employees, audit_log
+  |
+  +-- AWS Bedrock (Llama 3 8B)
+  |     note parsing -> who/what/when/urgency
+  |     coverage recommendation -> ranked candidates + reasoning
+  |
+  +-- AWS SES
+        swap approval -> email to assigned employee
+```
 
 ## Rubric Alignment
 
