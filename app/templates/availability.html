@@ -23,6 +23,7 @@
             color: #4a9eff;
             font-weight: 600;
         }
+        .header .links { display: flex; gap: 1rem; }
         .header a {
             color: #4a9eff;
             text-decoration: none;
@@ -39,10 +40,15 @@
             color: #4a9eff;
             margin-bottom: 0.25rem;
         }
+        h2 {
+            font-size: 1.1rem;
+            color: #8899aa;
+            margin: 1.5rem 0 1rem;
+        }
         .subtitle {
             font-size: 0.9rem;
             color: #666;
-            margin-bottom: 1.5rem;
+            margin-bottom: 1rem;
         }
         .emp-row {
             background: #1a2634;
@@ -54,19 +60,9 @@
             justify-content: space-between;
             gap: 1rem;
         }
-        .emp-name {
-            font-size: 0.95rem;
-            color: #c8d0d8;
-            min-width: 120px;
-        }
-        .emp-role {
-            font-size: 0.75rem;
-            color: #555;
-        }
-        .emp-row label {
-            font-size: 0.8rem;
-            color: #8899aa;
-        }
+        .emp-name { font-size: 0.95rem; color: #c8d0d8; min-width: 120px; }
+        .emp-role { font-size: 0.75rem; color: #555; }
+        .emp-row label { font-size: 0.8rem; color: #8899aa; }
         .emp-row input {
             padding: 0.5rem;
             border: 1px solid #2a3a4a;
@@ -74,12 +70,9 @@
             background: #0d1520;
             color: #e0e0e0;
             font-size: 0.85rem;
-            width: 220px;
+            width: 200px;
         }
-        .emp-row input:focus {
-            outline: none;
-            border-color: #4a9eff;
-        }
+        .emp-row input:focus { outline: none; border-color: #4a9eff; }
         .btn {
             padding: 0.6rem 1.5rem;
             background: #4a9eff;
@@ -91,6 +84,34 @@
             margin-top: 1rem;
         }
         .btn:hover { background: #3a8ee0; }
+        .btn-danger {
+            background: #ff4a4a;
+            padding: 0.35rem 0.8rem;
+            font-size: 0.75rem;
+            margin: 0;
+        }
+        .btn-danger:hover { background: #d33a3a; }
+        .add-form {
+            background: #1a2634;
+            padding: 1.25rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+        }
+        .add-form-row {
+            display: flex;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+        .add-form input {
+            padding: 0.5rem;
+            border: 1px solid #2a3a4a;
+            border-radius: 4px;
+            background: #0d1520;
+            color: #e0e0e0;
+            font-size: 0.85rem;
+        }
+        .add-form input:focus { outline: none; border-color: #4a9eff; }
+        .delete-form { display: inline; }
         .footer {
             text-align: center;
             margin-top: 3rem;
@@ -102,29 +123,55 @@
 <body>
     <div class="header">
         <span class="brand">AI Shift Manager</span>
-        <div style="display: flex; gap: 1rem;">
+        <div class="links">
             <a href="/">Notes</a>
+            <a href="/dashboard">Dashboard</a>
             <a href="/logout">Sign Out</a>
         </div>
     </div>
     <div class="container">
-        <h1>Employee Availability</h1>
-        <p class="subtitle">Set days each employee is unavailable. The swap dropdown filters these out automatically.</p>
+        <h1>Employee Management</h1>
+        <p class="subtitle">Set availability, add new employees, or remove inactive ones.</p>
+
+        <h2>Add Employee</h2>
+        <div class="add-form">
+            <form method="POST" action="/availability">
+                <input type="hidden" name="action" value="add_employee">
+                <div class="add-form-row">
+                    <input type="text" name="emp_name" placeholder="Name" required>
+                    <input type="text" name="emp_email" placeholder="Email (optional)">
+                    <input type="text" name="emp_role" placeholder="Role (default: officer)">
+                    <button type="submit" class="btn">Add Employee</button>
+                </div>
+            </form>
+        </div>
+
+        <h2>Availability & Employees</h2>
         <form method="POST" action="/availability">
+            <input type="hidden" name="action" value="save_availability">
             {% for emp in employees %}
             <div class="emp-row">
                 <div>
                     <span class="emp-name">{{ emp.name }}</span>
-                    <span class="emp-role">({{ emp.role }})</span>
+                    <span class="emp-role">({{ emp.role }}{% if emp.email %}, {{ emp.email }}{% endif %})</span>
                 </div>
-                <div style="display: flex; align-items: center; gap: 0.5rem;">
-                    <label>Unavailable days:</label>
-                    <input type="text" name="days_{{ emp.id }}" value="{{ emp.unavailable_days or '' }}" placeholder="e.g. monday, friday">
+                <div style="display: flex; align-items: center; gap: 0.75rem;">
+                    <label>Unavailable:</label>
+                    <input type="text" name="days_{{ emp.id }}" value="{{ emp.unavailable_days or '' }}" placeholder="monday, friday">
+                    <form method="POST" action="/availability" class="delete-form" onsubmit="return confirm('Remove {{ emp.name }}?')">
+                        <input type="hidden" name="action" value="delete_employee">
+                        <input type="hidden" name="emp_id" value="{{ emp.id }}">
+                        <button type="submit" class="btn btn-danger">Remove</button>
+                    </form>
                 </div>
             </div>
             {% endfor %}
+            {% if not employees %}
+            <p style="color: #444; padding: 1rem; text-align: center;">No employees yet. Add one above.</p>
+            {% endif %}
             <button type="submit" class="btn">Save Availability</button>
         </form>
+
         <p class="footer">CUA Busch School AI Vibe Coding Contest, Fall 2026</p>
     </div>
 </body>
