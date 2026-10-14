@@ -21,6 +21,20 @@
             max-width: 600px;
             padding: 2rem;
         }
+        .header {
+            width: 100%;
+            display: flex;
+            justify-content: flex-end;
+            padding: 1rem 2rem;
+        }
+        .logout-btn {
+            color: #4a9eff;
+            text-decoration: none;
+            font-size: 0.9rem;
+        }
+        .logout-btn:hover {
+            text-decoration: underline;
+        }
         h1 {
             font-size: 2.5rem;
             margin-bottom: 1rem;
@@ -29,7 +43,12 @@
         .tagline {
             font-size: 1.25rem;
             color: #a0a0a0;
-            margin-bottom: 3rem;
+            margin-bottom: 1rem;
+        }
+        .welcome {
+            font-size: 1rem;
+            color: #8899aa;
+            margin-bottom: 2rem;
         }
         .coming-soon {
             font-size: 1.5rem;
@@ -44,8 +63,14 @@
     </style>
 </head>
 <body>
+    <div class="header">
+        <a href="/logout" class="logout-btn">Sign Out</a>
+    </div>
     <div class="container">
         <h1>AI Shift Manager</h1>
+        {% if user %}
+        <p class="welcome">Welcome, {{ user.display_name }}</p>
+        {% endif %}
         <p class="tagline">An AI-powered shift scheduling app for supervisors in 24/7 security operations.</p>
         <p class="coming-soon">Coming Soon</p>
         <p class="footer">CUA Busch School AI Vibe Coding Contest, Fall 2026</p>
