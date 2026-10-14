@@ -36,6 +36,19 @@ Shift supervisors and managers in security, healthcare, facilities, and other 24
 - Hosting: AWS Free Tier
 - Version Control: GitHub (this repo)
 
+## Rubric Alignment
+
+| Category | Points | How This Repo Addresses It |
+| --- | --- | --- |
+| Problem Definition & Relevance | 10 | Real pain point for 24/7 security operations supervisors. Built from firsthand experience as a a sworn special police officer managing shift coverage at a major DC hospital. |
+| AI Feature Innovation & Integration | 20 | Plain-English note input parsed into structured scheduling constraints. Manager types natural language ("Mike has a funeral Wednesday"), app logs it as a constraint and surfaces available employees for swap approval. |
+| Technical Execution & Code Quality | 20 | Flask app with SQLite database, session-based auth, AWS SES email integration, pytest test suite (12 tests), GitHub Actions CI pipeline. Clean separation of routes, templates, and database layer. |
+| User Experience & Design | 10 | Dark-themed responsive UI. Login flow, note input form, employee dropdown for swap approval, status badges (open/approved), email confirmation banners. Designed for the supervisor who needs to act fast. |
+| Business Impact & Scalability | 10 | Replaces hours of manual schedule juggling per week. Scales from a single hospital security team to multi-site operations. SQLite prototype with PostgreSQL production path. AWS Free Tier deployment. |
+| GitHub Transparency | 10 | Full commit history showing iterative build from skeleton to MVP. CI badge in README. Public repo with clean commit messages documenting each feature addition. |
+| Documentation & Communication | 10 | This README with problem statement, solution, tech stack, and rubric alignment. THESIS.md with project rationale. Live app link at the top of the README. |
+| Deployment & Live Demo | 10 | Live at http://ai-shift-manager.us-east-1.elasticbeanstalk.com on AWS Elastic Beanstalk (t3.micro, Free Tier). Working login (admin/admin). Full swap flow functional end to end. |
+
 ## Status
 
-Built as part of the CUA AI Vibe Coding Competition. Work in progress.
+Built as part of the CUA AI Vibe Coding Competition (Fall 2026). MVP complete: login, note input, swap approval, and email notifications all working live on AWS.
