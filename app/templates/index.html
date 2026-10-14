@@ -230,6 +230,7 @@
         <span class="brand">AI Shift Manager</span>
         <div class="user-area">
             {% if user %}<span class="welcome">{{ user.display_name }}</span>{% endif %}
+            <a href="/availability" class="logout-btn" style="margin-right: 0.75rem;">Availability</a>
             <a href="/logout" class="logout-btn">Sign Out</a>
         </div>
     </div>
@@ -282,12 +283,15 @@
                             <div class="approve-row">
                                 <select name="assigned_to" required>
                                     <option value="">Select an employee...</option>
-                                    {% for emp in employees %}
+                                    {% for emp in available_employees[note.id] %}
                                     <option value="{{ emp.name }}">{{ emp.name }} ({{ emp.role }})</option>
                                     {% endfor %}
                                 </select>
                                 <button type="submit" class="btn btn-small">Approve Swap</button>
                             </div>
+                            {% if available_employees[note.id]|length < all_employees|length %}
+                            <p style="font-size: 0.7rem; color: #555; margin-top: 0.4rem;">Filtered by availability: {{ all_employees|length - available_employees[note.id]|length }} employee(s) excluded for this day.</p>
+                            {% endif %}
                         </form>
                     </div>
                     {% endif %}
