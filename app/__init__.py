@@ -6,7 +6,7 @@ import boto3
 from datetime import datetime
 from botocore.exceptions import ClientError
 from app.note_parser import parse_note
-from app.llm_parser import parse_note_with_llm
+from app.llm_parser import parse_note_with_llm, recommend_coverage
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev-secret-key-change-in-production")
@@ -152,16 +152,32 @@ def index():
     ).fetchall()
     all_employees = db.execute("SELECT * FROM employees ORDER BY name").fetchall()
 
-    # Build a dict of available employees per open note
+    # Build recent assignment counts for LLM recommendations
+    all_notes = db.execute("SELECT * FROM notes WHERE user_id = ? AND assigned_to IS NOT NULL", (session["user_id"],)).fetchall()
+    assignment_counts = {}
+    for n in all_notes:
+        if n["assigned_to"]:
+            assignment_counts[n["assigned_to"]] = assignment_counts.get(n["assigned_to"], 0) + 1
+
+    # Build a dict of available employees per open note + LLM recommendation
     available_employees = {}
+    recommendations = {}
     for note in notes:
         if note["status"] == "open":
-            available_employees[note["id"]] = filter_available_employees(all_employees, note["parsed_when"])
+            avail = filter_available_employees(all_employees, note["parsed_when"])
+            available_employees[note["id"]] = avail
+            # Get LLM recommendation
+            rec = recommend_coverage(
+                note["body"], note["parsed_who"], note["parsed_when"],
+                [dict(e) for e in all_employees], assignment_counts
+            )
+            recommendations[note["id"]] = rec
         else:
             available_employees[note["id"]] = all_employees
 
     db.close()
-    return render_template("index.html", user=user, notes=notes, all_employees=all_employees, available_employees=available_employees)
+    return render_template("index.html", user=user, notes=notes, all_employees=all_employees,
+                          available_employees=available_employees, recommendations=recommendations)
 
 
 @app.route("/availability", methods=["GET", "POST"])
