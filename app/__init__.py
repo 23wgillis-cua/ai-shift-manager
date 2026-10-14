@@ -5,6 +5,7 @@ import os
 import boto3
 from datetime import datetime
 from botocore.exceptions import ClientError
+from app.note_parser import parse_note
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev-secret-key-change-in-production")
@@ -45,6 +46,10 @@ def init_db():
             body TEXT NOT NULL,
             status TEXT DEFAULT 'open',
             assigned_to TEXT,
+            parsed_who TEXT,
+            parsed_what TEXT,
+            parsed_when TEXT,
+            parsed_urgency TEXT DEFAULT 'low',
             created_at TEXT NOT NULL,
             approved_at TEXT,
             FOREIGN KEY (user_id) REFERENCES users (id)
@@ -132,9 +137,20 @@ def add_note():
     body = request.form.get("body", "").strip()
     if body:
         db = get_db()
+        employees = db.execute("SELECT * FROM employees").fetchall()
+        parsed = parse_note(body)
+
+        # Match who against employee names
+        body_lower = body.lower()
+        for emp in employees:
+            first_name = emp["name"].split()[0].lower()
+            if first_name in body_lower:
+                parsed["who"] = emp["name"]
+                break
+
         db.execute(
-            "INSERT INTO notes (user_id, body, status, created_at) VALUES (?, ?, 'open', ?)",
-            (session["user_id"], body, datetime.now().strftime("%Y-%m-%d %H:%M")),
+            "INSERT INTO notes (user_id, body, status, parsed_who, parsed_what, parsed_when, parsed_urgency, created_at) VALUES (?, ?, 'open', ?, ?, ?, ?, ?)",
+            (session["user_id"], body, parsed["who"], parsed["what"], parsed["when"], parsed["urgency"], datetime.now().strftime("%Y-%m-%d %H:%M")),
         )
         db.commit()
         db.close()

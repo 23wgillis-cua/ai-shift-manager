@@ -191,6 +191,32 @@
             padding: 2rem;
             font-size: 0.9rem;
         }
+        .parsed-fields {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.4rem;
+            margin-bottom: 0.5rem;
+        }
+        .parsed-tag {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 3px;
+            font-size: 0.72rem;
+            background: #1a2634;
+            color: #8aa0b8;
+        }
+        .parsed-tag.urgency-high {
+            background: #2a1a1a;
+            color: #ff6a6a;
+        }
+        .parsed-tag.urgency-medium {
+            background: #2a2a1a;
+            color: #d4a834;
+        }
+        .parsed-tag.urgency-low {
+            background: #1a2a1a;
+            color: #6a9a4a;
+        }
         .footer {
             text-align: center;
             margin-top: 3rem;
@@ -235,6 +261,12 @@
                 {% for note in notes %}
                 <div class="note-item{% if note.status == 'approved' %} approved{% endif %}">
                     <p class="note-body">{{ note.body }}</p>
+                    <div class="parsed-fields">
+                        {% if note.parsed_who %}<span class="parsed-tag">Who: {{ note.parsed_who }}</span>{% endif %}
+                        {% if note.parsed_what %}<span class="parsed-tag">Reason: {{ note.parsed_what }}</span>{% endif %}
+                        {% if note.parsed_when and note.parsed_when != 'unspecified' %}<span class="parsed-tag">When: {{ note.parsed_when }}</span>{% endif %}
+                        {% if note.parsed_urgency %}<span class="parsed-tag urgency-{{ note.parsed_urgency }}">Urgency: {{ note.parsed_urgency }}</span>{% endif %}
+                    </div>
                     <p class="note-meta">
                         {{ note.created_at }}
                         <span class="status-badge status-{{ note.status }}">{{ note.status }}</span>
