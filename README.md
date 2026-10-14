@@ -41,13 +41,13 @@ Shift supervisors and managers in security, healthcare, facilities, and other 24
 | Category | Points | How This Repo Addresses It |
 | --- | --- | --- |
 | Problem Definition & Relevance | 10 | Real pain point for 24/7 security operations supervisors. Built from firsthand experience as a DC MPD Special Police Officer managing shift coverage at MedStar Washington Hospital Center. |
-| AI Feature Innovation & Integration | 20 | Plain-English note input parsed into structured scheduling constraints. Manager types natural language ("Mike has a funeral Wednesday"), app logs it as a constraint and surfaces available employees for swap approval. |
-| Technical Execution & Code Quality | 20 | Flask app with SQLite database, session-based auth, AWS SES email integration, pytest test suite (12 tests), GitHub Actions CI pipeline. Clean separation of routes, templates, and database layer. |
-| User Experience & Design | 10 | Dark-themed responsive UI. Login flow, note input form, employee dropdown for swap approval, status badges (open/approved), email confirmation banners. Designed for the supervisor who needs to act fast. |
-| Business Impact & Scalability | 10 | Replaces hours of manual schedule juggling per week. Scales from a single hospital security team to multi-site operations. SQLite prototype with PostgreSQL production path. AWS Free Tier deployment. |
-| GitHub Transparency | 10 | Full commit history showing iterative build from skeleton to MVP. CI badge in README. Public repo with clean commit messages documenting each feature addition. |
-| Documentation & Communication | 10 | This README with problem statement, solution, tech stack, and rubric alignment. THESIS.md with project rationale. Live app link at the top of the README. |
-| Deployment & Live Demo | 10 | Live at http://ai-shift-manager.us-east-1.elasticbeanstalk.com on AWS Elastic Beanstalk (t3.micro, Free Tier). Working login (admin/admin). Full swap flow functional end to end. |
+| AI Feature Innovation & Integration | 20 | Two-stage AI pipeline: (1) AWS Bedrock LLM (Llama 3) parses plain-English notes into structured JSON (who, what, when, urgency) with regex fallback, (2) same LLM reasons through coverage recommendations by weighing availability, workload distribution, and role fit, returning ranked candidates with 1-10 scores and natural-language reasoning. |
+| Technical Execution & Code Quality | 20 | Flask app with SQLite database, session-based auth, AWS SES email integration, AWS Bedrock LLM integration, pytest test suite (12 tests), GitHub Actions CI pipeline. Shared base template with Jinja inheritance. Separate modules for note parsing, LLM integration, and route handling. |
+| User Experience & Design | 10 | Dark-themed responsive UI with shared sticky nav bar, smooth hover transitions, auto-dismissing notifications, mobile media queries. Pages: Notes (with AI recommendation cards), Calendar (month grid with color-coded notes), Team (add/remove employees, set availability), Dashboard (stat cards + bar charts), Audit Log. |
+| Business Impact & Scalability | 10 | Replaces hours of manual schedule juggling per week. Availability-aware coverage filtering excludes unavailable employees automatically. CSV export for reporting up the chain. Audit log for compliance. SQLite prototype with PostgreSQL production path. AWS Free Tier deployment. |
+| GitHub Transparency | 10 | 31+ commits showing iterative build from skeleton to full-featured app. CI badge in README. Clean commit messages documenting each feature addition. Conventional commit format. |
+| Documentation & Communication | 10 | This README with problem statement, solution, tech stack, rubric alignment, and demo credentials. THESIS.md with project rationale. Live app link and tech stack at the top of the README. |
+| Deployment & Live Demo | 10 | Live at http://ai-shift-manager.us-east-1.elasticbeanstalk.com on AWS Elastic Beanstalk (t3.micro, Free Tier). Working login (admin/admin). Full swap flow: note input, AI parsing, coverage recommendation, approval, email notification. Calendar, dashboard, audit log, and CSV export all functional. |
 
 ## Demo Credentials
 
