@@ -241,8 +241,8 @@
             .card { padding: 1rem; }
             textarea { min-height: 60px; }
         }
+        {% block extra_style %}{% endblock %}
     </style>
-    {% block extra_style %}{% endblock %}
 </head>
 <body>
     {% block nav %}
