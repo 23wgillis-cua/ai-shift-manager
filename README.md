@@ -49,6 +49,14 @@ Shift supervisors and managers in security, healthcare, facilities, and other 24
 | Documentation & Communication | 10 | This README with problem statement, solution, tech stack, and rubric alignment. THESIS.md with project rationale. Live app link at the top of the README. |
 | Deployment & Live Demo | 10 | Live at http://ai-shift-manager.us-east-1.elasticbeanstalk.com on AWS Elastic Beanstalk (t3.micro, Free Tier). Working login (admin/admin). Full swap flow functional end to end. |
 
+## Demo Credentials
+
+| URL | Credentials |
+| --- | --- |
+| http://ai-shift-manager.us-east-1.elasticbeanstalk.com | Username: `admin` / Password: `admin` |
+
+Log in with the demo account and try the full flow: type a shift note, see the AI parse it into who/what/when/urgency, get a coverage recommendation from the LLM, approve a swap, and an email notification goes out via AWS SES.
+
 ## Status
 
 Built as part of the CUA AI Vibe Coding Competition (Fall 2026). MVP complete: login, note input, swap approval, and email notifications all working live on AWS.
