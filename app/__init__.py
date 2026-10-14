@@ -147,10 +147,24 @@ def availability():
         return redirect(url_for("login"))
     db = get_db()
     if request.method == "POST":
-        for emp in db.execute("SELECT * FROM employees").fetchall():
-            days = request.form.get(f"days_{emp['id']}", "").strip().lower()
-            db.execute("UPDATE employees SET unavailable_days = ? WHERE id = ?", (days, emp["id"]))
-        db.commit()
+        action = request.form.get("action", "")
+        if action == "save_availability":
+            for emp in db.execute("SELECT * FROM employees").fetchall():
+                days = request.form.get(f"days_{emp['id']}", "").strip().lower()
+                db.execute("UPDATE employees SET unavailable_days = ? WHERE id = ?", (days, emp["id"]))
+            db.commit()
+        elif action == "add_employee":
+            name = request.form.get("emp_name", "").strip()
+            email = request.form.get("emp_email", "").strip()
+            role = request.form.get("emp_role", "officer").strip() or "officer"
+            if name:
+                db.execute("INSERT INTO employees (name, email, role, unavailable_days) VALUES (?, ?, ?, '')", (name, email, role))
+            db.commit()
+        elif action == "delete_employee":
+            emp_id = request.form.get("emp_id", "")
+            if emp_id:
+                db.execute("DELETE FROM employees WHERE id = ?", (emp_id,))
+            db.commit()
         db.close()
         return redirect(url_for("availability"))
     employees = db.execute("SELECT * FROM employees ORDER BY name").fetchall()
