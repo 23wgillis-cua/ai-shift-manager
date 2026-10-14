@@ -2,12 +2,19 @@ from flask import Flask, render_template, request, redirect, url_for, session
 from werkzeug.security import generate_password_hash, check_password_hash
 import sqlite3
 import os
+import boto3
 from datetime import datetime
+from botocore.exceptions import ClientError
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev-secret-key-change-in-production")
 
 DB_PATH = os.environ.get("DB_PATH", "shiftmanager.db")
+SES_REGION = os.environ.get("SES_REGION", "us-east-1")
+SES_FROM = os.environ.get("SES_FROM", "gillisw@cua.edu")
+SES_ENABLED = os.environ.get("SES_ENABLED", "1") != "0"
+
+ses_client = boto3.client("ses", region_name=SES_REGION) if SES_ENABLED else None
 
 
 def get_db():
@@ -58,23 +65,50 @@ def init_db():
     if count == 0:
         db.execute(
             "INSERT INTO users (username, password_hash, display_name, role, email) VALUES (?, ?, ?, ?, ?)",
-            ("admin", generate_password_hash("admin"), "Admin", "manager", "admin@example.com"),
+            ("admin", generate_password_hash("admin"), "Admin", "manager", "gillisw@cua.edu"),
         )
     emp_count = db.execute("SELECT COUNT(*) FROM employees").fetchone()[0]
     if emp_count == 0:
         db.executemany(
             "INSERT INTO employees (name, email, role) VALUES (?, ?, ?)",
             [
-                ("Mike Rodriguez", "mike@example.com", "officer"),
-                ("Sarah Chen", "sarah@example.com", "officer"),
-                ("James O'Brien", "james@example.com", "officer"),
-                ("Maria Santos", "maria@example.com", "supervisor"),
-                ("Tony Walker", "tony@example.com", "officer"),
-                ("Priya Patel", "priya@example.com", "officer"),
+                ("Mike Rodriguez", "23wgillis@gmail.com", "officer"),
+                ("Sarah Chen", "23wgillis@gmail.com", "officer"),
+                ("James O'Brien", "23wgillis@gmail.com", "officer"),
+                ("Maria Santos", "23wgillis@gmail.com", "supervisor"),
+                ("Tony Walker", "23wgillis@gmail.com", "officer"),
+                ("Priya Patel", "23wgillis@gmail.com", "officer"),
             ],
         )
     db.commit()
     db.close()
+
+
+def send_swap_notification(assigned_name, assigned_email, note_body, manager_name):
+    if not ses_client or not assigned_email:
+        return False
+    subject = f"Shift Coverage Assignment - {assigned_name}"
+    body = (
+        f"Hi {assigned_name},\n\n"
+        f"{manager_name} has assigned you to cover a shift.\n\n"
+        f"Details:\n"
+        f"  Note: {note_body}\n\n"
+        f"Please confirm you can cover this shift.\n\n"
+        f"- AI Shift Manager\n"
+        f"CUA Busch School AI Vibe Coding Contest, Fall 2026"
+    )
+    try:
+        ses_client.send_email(
+            Source=SES_FROM,
+            Destination={"ToAddresses": [assigned_email]},
+            Message={
+                "Subject": {"Data": subject},
+                "Body": {"Text": {"Data": body}},
+            },
+        )
+        return True
+    except ClientError:
+        return False
 
 
 @app.route("/")
@@ -114,12 +148,32 @@ def approve_note(note_id):
     assigned_to = request.form.get("assigned_to", "").strip()
     if assigned_to:
         db = get_db()
-        db.execute(
-            "UPDATE notes SET status = 'approved', assigned_to = ?, approved_at = ? WHERE id = ? AND user_id = ?",
-            (assigned_to, datetime.now().strftime("%Y-%m-%d %H:%M"), note_id, session["user_id"]),
-        )
-        db.commit()
-        db.close()
+        note = db.execute(
+            "SELECT * FROM notes WHERE id = ? AND user_id = ?", (note_id, session["user_id"])
+        ).fetchone()
+        if note and note["status"] == "open":
+            db.execute(
+                "UPDATE notes SET status = 'approved', assigned_to = ?, approved_at = ? WHERE id = ?",
+                (assigned_to, datetime.now().strftime("%Y-%m-%d %H:%M"), note_id),
+            )
+            db.commit()
+
+            # Look up employee email
+            emp = db.execute(
+                "SELECT * FROM employees WHERE name = ?", (assigned_to,)
+            ).fetchone()
+            user = db.execute(
+                "SELECT * FROM users WHERE id = ?", (session["user_id"],)
+            ).fetchone()
+            db.close()
+
+            # Send email notification
+            emp_email = emp["email"] if emp else None
+            manager_name = user["display_name"] if user else "Manager"
+            sent = send_swap_notification(assigned_to, emp_email, note["body"], manager_name)
+            session["email_sent"] = sent
+        else:
+            db.close()
     return redirect(url_for("index"))
 
 
