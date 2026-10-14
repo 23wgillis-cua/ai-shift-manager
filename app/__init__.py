@@ -62,7 +62,8 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             email TEXT,
-            role TEXT DEFAULT 'officer'
+            role TEXT DEFAULT 'officer',
+            unavailable_days TEXT DEFAULT ''
         )
         """
     )
@@ -75,14 +76,14 @@ def init_db():
     emp_count = db.execute("SELECT COUNT(*) FROM employees").fetchone()[0]
     if emp_count == 0:
         db.executemany(
-            "INSERT INTO employees (name, email, role) VALUES (?, ?, ?)",
+            "INSERT INTO employees (name, email, role, unavailable_days) VALUES (?, ?, ?, ?)",
             [
-                ("Mike Rodriguez", "23wgillis@gmail.com", "officer"),
-                ("Sarah Chen", "23wgillis@gmail.com", "officer"),
-                ("James O'Brien", "23wgillis@gmail.com", "officer"),
-                ("Maria Santos", "23wgillis@gmail.com", "supervisor"),
-                ("Tony Walker", "23wgillis@gmail.com", "officer"),
-                ("Priya Patel", "23wgillis@gmail.com", "officer"),
+                ("Mike Rodriguez", "23wgillis@gmail.com", "officer", ""),
+                ("Sarah Chen", "23wgillis@gmail.com", "officer", "monday"),
+                ("James O'Brien", "23wgillis@gmail.com", "officer", ""),
+                ("Maria Santos", "23wgillis@gmail.com", "supervisor", ""),
+                ("Tony Walker", "23wgillis@gmail.com", "officer", "friday"),
+                ("Priya Patel", "23wgillis@gmail.com", "officer", ""),
             ],
         )
     db.commit()
@@ -125,9 +126,52 @@ def index():
     notes = db.execute(
         "SELECT * FROM notes WHERE user_id = ? ORDER BY created_at DESC", (session["user_id"],)
     ).fetchall()
+    all_employees = db.execute("SELECT * FROM employees ORDER BY name").fetchall()
+
+    # Build a dict of available employees per open note
+    available_employees = {}
+    for note in notes:
+        if note["status"] == "open":
+            available_employees[note["id"]] = filter_available_employees(all_employees, note["parsed_when"])
+        else:
+            available_employees[note["id"]] = all_employees
+
+    db.close()
+    return render_template("index.html", user=user, notes=notes, all_employees=all_employees, available_employees=available_employees)
+
+
+@app.route("/availability", methods=["GET", "POST"])
+def availability():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+    db = get_db()
+    if request.method == "POST":
+        for emp in db.execute("SELECT * FROM employees").fetchall():
+            days = request.form.get(f"days_{emp['id']}", "").strip().lower()
+            db.execute("UPDATE employees SET unavailable_days = ? WHERE id = ?", (days, emp["id"]))
+        db.commit()
+        db.close()
+        return redirect(url_for("availability"))
     employees = db.execute("SELECT * FROM employees ORDER BY name").fetchall()
     db.close()
-    return render_template("index.html", user=user, notes=notes, employees=employees)
+    return render_template("availability.html", employees=employees)
+
+
+def filter_available_employees(employees, parsed_when):
+    """Filter out employees whose unavailable_days match the parsed day."""
+    if not parsed_when or parsed_when == "unspecified":
+        return employees
+    day_keywords = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday",
+                    "today", "tomorrow", "tonight"]
+    matched_days = [d for d in day_keywords if d in parsed_when.lower()]
+    if not matched_days:
+        return employees
+    available = []
+    for emp in employees:
+        unavail = (emp["unavailable_days"] or "").lower()
+        if not any(day in unavail for day in matched_days):
+            available.append(emp)
+    return available
 
 
 @app.route("/add-note", methods=["POST"])
