@@ -6,6 +6,7 @@ import boto3
 from datetime import datetime
 from botocore.exceptions import ClientError
 from app.note_parser import parse_note
+from app.llm_parser import parse_note_with_llm
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev-secret-key-change-in-production")
@@ -220,15 +221,21 @@ def add_note():
     if body:
         db = get_db()
         employees = db.execute("SELECT * FROM employees").fetchall()
-        parsed = parse_note(body)
+        emp_names = [e["name"] for e in employees]
 
-        # Match who against employee names
-        body_lower = body.lower()
-        for emp in employees:
-            first_name = emp["name"].split()[0].lower()
-            if first_name in body_lower:
-                parsed["who"] = emp["name"]
-                break
+        # Try LLM parser first, fall back to regex
+        parsed = parse_note_with_llm(body, emp_names)
+        if parsed is None:
+            parsed = parse_note(body)
+
+        # Match who against employee names if LLM didn't find a match
+        if not parsed.get("who"):
+            body_lower = body.lower()
+            for emp in employees:
+                first_name = emp["name"].split()[0].lower()
+                if first_name in body_lower:
+                    parsed["who"] = emp["name"]
+                    break
 
         db.execute(
             "INSERT INTO notes (user_id, body, status, parsed_who, parsed_what, parsed_when, parsed_urgency, created_at) VALUES (?, ?, 'open', ?, ?, ?, ?, ?)",
