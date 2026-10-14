@@ -37,11 +37,9 @@
             text-decoration: none;
             font-size: 0.85rem;
         }
-        .logout-btn:hover {
-            text-decoration: underline;
-        }
+        .logout-btn:hover { text-decoration: underline; }
         .container {
-            max-width: 700px;
+            max-width: 750px;
             margin: 0 auto;
             padding: 2rem;
         }
@@ -83,7 +81,7 @@
             outline: none;
             border-color: #4a9eff;
         }
-        .note-form .btn {
+        .btn {
             margin-top: 0.75rem;
             padding: 0.6rem 1.5rem;
             background: #4a9eff;
@@ -93,8 +91,10 @@
             font-size: 0.9rem;
             cursor: pointer;
         }
-        .note-form .btn:hover {
-            background: #3a8ee0;
+        .btn:hover { background: #3a8ee0; }
+        .btn-small {
+            padding: 0.4rem 1rem;
+            font-size: 0.8rem;
         }
         .notes-list h2 {
             font-size: 1.1rem;
@@ -108,6 +108,9 @@
             margin-bottom: 0.75rem;
             border-left: 3px solid #4a9eff;
         }
+        .note-item.approved {
+            border-left-color: #8bc34a;
+        }
         .note-item .note-body {
             font-size: 0.95rem;
             color: #c8d0d8;
@@ -116,6 +119,12 @@
         .note-item .note-meta {
             font-size: 0.75rem;
             color: #555;
+            margin-bottom: 0.5rem;
+        }
+        .note-item .assigned {
+            font-size: 0.85rem;
+            color: #8bc34a;
+            margin-bottom: 0.5rem;
         }
         .status-badge {
             display: inline-block;
@@ -125,13 +134,35 @@
             text-transform: uppercase;
             letter-spacing: 0.5px;
         }
-        .status-open {
-            background: #2a3a1a;
-            color: #8bc34a;
+        .status-open { background: #2a3a1a; color: #b8d68a; }
+        .status-approved { background: #1a2a3a; color: #4a9eff; }
+        .approve-section {
+            margin-top: 0.75rem;
+            padding-top: 0.75rem;
+            border-top: 1px solid #1a2634;
         }
-        .status-approved {
-            background: #1a2a3a;
-            color: #4a9eff;
+        .approve-section label {
+            font-size: 0.8rem;
+            color: #8899aa;
+            display: block;
+            margin-bottom: 0.4rem;
+        }
+        .approve-row {
+            display: flex;
+            gap: 0.5rem;
+        }
+        .approve-row select {
+            flex: 1;
+            padding: 0.5rem;
+            border: 1px solid #2a3a4a;
+            border-radius: 4px;
+            background: #0d1520;
+            color: #e0e0e0;
+            font-size: 0.85rem;
+        }
+        .approve-row select:focus {
+            outline: none;
+            border-color: #4a9eff;
         }
         .empty {
             text-align: center;
@@ -171,12 +202,31 @@
             <h2>Recent Notes</h2>
             {% if notes %}
                 {% for note in notes %}
-                <div class="note-item">
+                <div class="note-item{% if note.status == 'approved' %} approved{% endif %}">
                     <p class="note-body">{{ note.body }}</p>
                     <p class="note-meta">
                         {{ note.created_at }}
                         <span class="status-badge status-{{ note.status }}">{{ note.status }}</span>
                     </p>
+                    {% if note.status == 'approved' and note.assigned_to %}
+                    <p class="assigned">Assigned to: {{ note.assigned_to }}</p>
+                    {% endif %}
+                    {% if note.status == 'open' %}
+                    <div class="approve-section">
+                        <form method="POST" action="/approve/{{ note.id }}">
+                            <label>Assign coverage to:</label>
+                            <div class="approve-row">
+                                <select name="assigned_to" required>
+                                    <option value="">Select an employee...</option>
+                                    {% for emp in employees %}
+                                    <option value="{{ emp.name }}">{{ emp.name }} ({{ emp.role }})</option>
+                                    {% endfor %}
+                                </select>
+                                <button type="submit" class="btn btn-small">Approve Swap</button>
+                            </div>
+                        </form>
+                    </div>
+                    {% endif %}
                 </div>
                 {% endfor %}
             {% else %}
