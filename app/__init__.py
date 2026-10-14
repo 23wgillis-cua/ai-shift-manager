@@ -261,6 +261,105 @@ def audit():
     return render_template("audit.html", user=user, logs=logs)
 
 
+@app.route("/calendar")
+def calendar():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+    import calendar as cal
+    from datetime import date, timedelta
+
+    today = date.today()
+    year = int(request.args.get("year", today.year))
+    month = int(request.args.get("month", today.month))
+
+    cal_data = cal.monthcalendar(year, month)
+    month_name = cal.month_name[month]
+
+    # Get notes for this user
+    db = get_db()
+    user = db.execute("SELECT * FROM users WHERE id = ?", (session["user_id"],)).fetchone()
+    notes = db.execute(
+        "SELECT * FROM notes WHERE user_id = ? ORDER BY created_at DESC", (session["user_id"],)
+    ).fetchall()
+    db.close()
+
+    # Build a dict mapping date -> list of notes
+    # Try to map parsed_when to actual dates in the current month
+    notes_by_day = {}
+    day_keywords = {
+        "monday": 0, "tuesday": 1, "wednesday": 2, "thursday": 3,
+        "friday": 4, "saturday": 5, "sunday": 6,
+    }
+    for note in notes:
+        when = (note["parsed_when"] or "").lower()
+        placed = False
+
+        # Check for day-of-week matches
+        for day_name, day_num in day_keywords.items():
+            if day_name in when:
+                # Find all occurrences of this weekday in the month
+                for week in cal_data:
+                    if week[day_num] != 0:
+                        d = date(year, month, week[day_num])
+                        notes_by_day.setdefault(d, []).append(note)
+                        placed = True
+                break
+
+        if not placed:
+            # Check for date patterns like 10/20
+            import re
+            date_match = re.search(r"(\d{1,2})/(\d{1,2})", when)
+            if date_match:
+                m, d = int(date_match.group(1)), int(date_match.group(2))
+                if m == month:
+                    try:
+                        target = date(year, month, d)
+                        notes_by_day.setdefault(target, []).append(note)
+                        placed = True
+                    except ValueError:
+                        pass
+
+        if not placed and "today" in when:
+            notes_by_day.setdefault(today, []).append(note)
+        elif not placed and "tomorrow" in when:
+            notes_by_day.setdefault(today + timedelta(days=1), []).append(note)
+
+    # Also add notes created today if they have no day match
+    for note in notes:
+        if not any(note in notes_by_day.get(d, []) for d in notes_by_day):
+            pass  # they just won't appear on the calendar, that's fine
+
+    # Build weeks with notes
+    weeks = []
+    for week in cal_data:
+        week_days = []
+        for day_num in week:
+            if day_num == 0:
+                week_days.append(None)
+            else:
+                d = date(year, month, day_num)
+                day_notes = notes_by_day.get(d, [])
+                week_days.append({
+                    "day": day_num,
+                    "date": d,
+                    "is_today": d == today,
+                    "notes": day_notes,
+                    "open_count": sum(1 for n in day_notes if n["status"] == "open"),
+                    "approved_count": sum(1 for n in day_notes if n["status"] == "approved"),
+                })
+        weeks.append(week_days)
+
+    # Prev/next month links
+    prev_month = month - 1 if month > 1 else 12
+    prev_year = year if month > 1 else year - 1
+    next_month = month + 1 if month < 12 else 1
+    next_year = year if month < 12 else year + 1
+
+    return render_template("calendar.html", user=user, weeks=weeks, month_name=month_name,
+                           year=year, month=month, prev_month=prev_month, prev_year=prev_year,
+                           next_month=next_month, next_year=next_year, today=today)
+
+
 @app.route("/export/csv")
 def export_csv():
     if "user_id" not in session:
