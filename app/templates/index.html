@@ -53,6 +53,22 @@
             color: #666;
             margin-bottom: 1.5rem;
         }
+        .notification {
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            margin-bottom: 1.5rem;
+            font-size: 0.9rem;
+        }
+        .notification.success {
+            background: #1a2a1a;
+            color: #8bc34a;
+            border: 1px solid #2a3a1a;
+        }
+        .notification.warning {
+            background: #2a2a1a;
+            color: #d4a834;
+            border: 1px solid #3a3a1a;
+        }
         .note-form {
             background: #1a2634;
             padding: 1.25rem;
@@ -126,6 +142,11 @@
             color: #8bc34a;
             margin-bottom: 0.5rem;
         }
+        .note-item .email-status {
+            font-size: 0.75rem;
+            color: #888;
+            margin-top: 0.25rem;
+        }
         .status-badge {
             display: inline-block;
             padding: 0.15rem 0.6rem;
@@ -190,6 +211,16 @@
         <h1>Shift Notes</h1>
         <p class="subtitle">Type a plain-English note about a scheduling change.</p>
 
+        {% if session.get('email_sent') is not none %}
+        <div class="notification {% if session.get('email_sent') %}success{% else %}warning{% endif %}">
+            {% if session.get('email_sent') %}
+                Email notification sent to the assigned employee.
+            {% else %}
+                Swap approved, but email notification could not be sent. Check SES settings.
+            {% endif %}
+        </div>
+        {% endif %}
+
         <div class="note-form">
             <form method="POST" action="/add-note">
                 <label for="body">What happened?</label>
@@ -210,6 +241,7 @@
                     </p>
                     {% if note.status == 'approved' and note.assigned_to %}
                     <p class="assigned">Assigned to: {{ note.assigned_to }}</p>
+                    <p class="email-status">Notification email sent on {{ note.approved_at }}</p>
                     {% endif %}
                     {% if note.status == 'open' %}
                     <div class="approve-section">
