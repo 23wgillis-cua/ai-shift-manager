@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Shift Manager - Audit Log</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f1923;
+            color: #e0e0e0;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1rem 2rem;
+            border-bottom: 1px solid #1a2634;
+        }
+        .header .brand { font-size: 1.1rem; color: #4a9eff; font-weight: 600; }
+        .header .links { display: flex; gap: 1rem; }
+        .header a { color: #4a9eff; text-decoration: none; font-size: 0.85rem; }
+        .header a:hover { text-decoration: underline; }
+        .container { max-width: 800px; margin: 0 auto; padding: 2rem; }
+        h1 { font-size: 1.5rem; color: #4a9eff; margin-bottom: 0.25rem; }
+        .subtitle { font-size: 0.9rem; color: #666; margin-bottom: 1.5rem; }
+        .log-item {
+            background: #1a2634;
+            padding: 0.75rem 1rem;
+            border-radius: 6px;
+            margin-bottom: 0.5rem;
+            border-left: 3px solid #4a9eff;
+        }
+        .log-item .log-time { font-size: 0.7rem; color: #555; }
+        .log-item .log-action { font-size: 0.85rem; color: #c8d0d8; font-weight: 600; }
+        .log-item .log-detail { font-size: 0.8rem; color: #8899aa; margin-top: 0.2rem; }
+        .empty { text-align: center; color: #444; padding: 2rem; font-size: 0.9rem; }
+        .footer { text-align: center; margin-top: 3rem; font-size: 0.75rem; color: #333; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <span class="brand">AI Shift Manager</span>
+        <div class="links">
+            <a href="/">Notes</a>
+            <a href="/availability">Availability</a>
+            <a href="/dashboard">Dashboard</a>
+            <a href="/logout">Sign Out</a>
+        </div>
+    </div>
+    <div class="container">
+        <h1>Audit Log</h1>
+        <p class="subtitle">Every action logged with timestamps.</p>
+        {% if logs %}
+        {% for log in logs %}
+        <div class="log-item">
+            <span class="log-time">{{ log.created_at }}</span>
+            <div class="log-action">{{ log.action }}</div>
+            {% if log.detail %}<div class="log-detail">{{ log.detail }}</div>{% endif %}
+        </div>
+        {% endfor %}
+        {% else %}
+        <p class="empty">No actions logged yet.</p>
+        {% endif %}
+        <p class="footer">CUA Busch School AI Vibe Coding Contest, Fall 2026</p>
+    </div>
+</body>
+</html>

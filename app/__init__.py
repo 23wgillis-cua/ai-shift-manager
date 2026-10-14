@@ -25,6 +25,18 @@ def get_db():
     return db
 
 
+def log_action(action, detail=""):
+    """Write an entry to the audit log."""
+    uid = session.get("user_id")
+    db = get_db()
+    db.execute(
+        "INSERT INTO audit_log (user_id, action, detail, created_at) VALUES (?, ?, ?, ?)",
+        (uid, action, detail, datetime.now().strftime("%Y-%m-%d %H:%M")),
+    )
+    db.commit()
+    db.close()
+
+
 def init_db():
     db = get_db()
     db.execute(
@@ -65,6 +77,17 @@ def init_db():
             email TEXT,
             role TEXT DEFAULT 'officer',
             unavailable_days TEXT DEFAULT ''
+        )
+        """
+    )
+    db.execute(
+        """
+        CREATE TABLE IF NOT EXISTS audit_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            action TEXT NOT NULL,
+            detail TEXT,
+            created_at TEXT NOT NULL
         )
         """
     )
@@ -227,6 +250,17 @@ def dashboard():
                            total_employees=len(employees))
 
 
+@app.route("/audit")
+def audit():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+    db = get_db()
+    user = db.execute("SELECT * FROM users WHERE id = ?", (session["user_id"],)).fetchone()
+    logs = db.execute("SELECT * FROM audit_log ORDER BY created_at DESC LIMIT 50").fetchall()
+    db.close()
+    return render_template("audit.html", user=user, logs=logs)
+
+
 @app.route("/add-note", methods=["POST"])
 def add_note():
     if "user_id" not in session:
@@ -257,6 +291,7 @@ def add_note():
         )
         db.commit()
         db.close()
+        log_action("note_created", body[:100])
     return redirect(url_for("index"))
 
 
@@ -291,6 +326,7 @@ def approve_note(note_id):
             manager_name = user["display_name"] if user else "Manager"
             sent = send_swap_notification(assigned_to, emp_email, note["body"], manager_name)
             session["email_sent"] = sent
+            log_action("swap_approved", f"Note #{note_id} assigned to {assigned_to}, email sent: {sent}")
         else:
             db.close()
     return redirect(url_for("index"))
