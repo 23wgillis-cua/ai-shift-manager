@@ -217,6 +217,46 @@
             background: #1a2a1a;
             color: #6a9a4a;
         }
+        .ai-recommendation {
+            background: #0d1520;
+            border: 1px solid #2a3a4a;
+            border-radius: 6px;
+            padding: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+        .ai-badge {
+            display: inline-block;
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #4a9eff;
+            background: #1a2634;
+            padding: 0.15rem 0.5rem;
+            border-radius: 3px;
+            margin-bottom: 0.5rem;
+        }
+        .ai-rec-name {
+            font-size: 0.9rem;
+            color: #c8d0d8;
+            margin-bottom: 0.25rem;
+        }
+        .ai-rec-reason {
+            font-size: 0.8rem;
+            color: #8899aa;
+            margin-bottom: 0.5rem;
+        }
+        .ai-rankings {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.3rem;
+        }
+        .ai-rank-item {
+            font-size: 0.7rem;
+            color: #667788;
+            background: #152033;
+            padding: 0.15rem 0.4rem;
+            border-radius: 3px;
+        }
         .footer {
             text-align: center;
             margin-top: 3rem;
@@ -280,6 +320,20 @@
                     {% endif %}
                     {% if note.status == 'open' %}
                     <div class="approve-section">
+                        {% if recommendations.get(note.id) %}
+                        <div class="ai-recommendation">
+                            <div class="ai-badge">AI Recommendation</div>
+                            <p class="ai-rec-name">Recommended: <strong>{{ recommendations[note.id].recommended }}</strong></p>
+                            <p class="ai-rec-reason">{{ recommendations[note.id].reasoning }}</p>
+                            {% if recommendations[note.id].rankings %}
+                            <div class="ai-rankings">
+                                {% for r in recommendations[note.id].rankings[:5] %}
+                                <span class="ai-rank-item">{{ r.name }} ({{ r.score }}/10)</span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                        {% endif %}
                         <form method="POST" action="/approve/{{ note.id }}">
                             <label>Assign coverage to:</label>
                             <div class="approve-row">

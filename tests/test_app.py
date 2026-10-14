@@ -2,6 +2,7 @@ import pytest
 import os
 import tempfile
 import app as app_module
+import app.llm_parser as llm_module
 from app import app, init_db, get_db
 
 
@@ -11,7 +12,10 @@ def client():
     db_fd, db_path = tempfile.mkstemp(suffix=".db")
     app_module.DB_PATH = db_path
     app_module.ses_client = None
+    app_module.BEDROCK_ENABLED = False
+    llm_module.BEDROCK_ENABLED = False
     os.environ["SES_ENABLED"] = "0"
+    os.environ["BEDROCK_ENABLED"] = "0"
 
     app.config["TESTING"] = True
     app.config["SECRET_KEY"] = "test-secret"
