@@ -261,6 +261,37 @@ def audit():
     return render_template("audit.html", user=user, logs=logs)
 
 
+@app.route("/export/csv")
+def export_csv():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+    db = get_db()
+    notes = db.execute(
+        "SELECT * FROM notes WHERE user_id = ? ORDER BY created_at DESC", (session["user_id"],)
+    ).fetchall()
+    db.close()
+
+    import io
+    import csv
+    output = io.StringIO()
+    writer = csv.writer(output)
+    writer.writerow(["ID", "Body", "Status", "Assigned To", "Who", "What", "When", "Urgency", "Created At", "Approved At"])
+    for n in notes:
+        writer.writerow([
+            n["id"], n["body"], n["status"], n["assigned_to"] or "",
+            n["parsed_who"] or "", n["parsed_what"] or "", n["parsed_when"] or "",
+            n["parsed_urgency"] or "", n["created_at"], n["approved_at"] or ""
+        ])
+
+    from flask import Response
+    log_action("csv_exported", f"{len(notes)} notes")
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-Disposition": "attachment; filename=shift_notes_export.csv"}
+    )
+
+
 @app.route("/add-note", methods=["POST"])
 def add_note():
     if "user_id" not in session:
