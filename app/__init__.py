@@ -494,6 +494,36 @@ def login():
     return render_template("login.html", error=error)
 
 
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    error = None
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
+        display_name = request.form.get("display_name", "").strip()
+        email = request.form.get("email", "").strip()
+        if not username or not password or not display_name:
+            error = "All fields are required."
+        elif len(password) < 4:
+            error = "Password must be at least 4 characters."
+        else:
+            db = get_db()
+            existing = db.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
+            if existing:
+                error = "That username is taken."
+            else:
+                db.execute(
+                    "INSERT INTO users (username, password_hash, display_name, role, email) VALUES (?, ?, ?, 'manager', ?)",
+                    (username, generate_password_hash(password), display_name, email or None),
+                )
+                db.commit()
+                db.close()
+                log_action("user_registered", username)
+                return redirect(url_for("login"))
+            db.close()
+    return render_template("register.html", error=error)
+
+
 @app.route("/logout")
 def logout():
     session.clear()
