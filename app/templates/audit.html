@@ -37,6 +37,15 @@
         .log-item .log-detail { font-size: 0.8rem; color: #8899aa; margin-top: 0.2rem; }
         .empty { text-align: center; color: #444; padding: 2rem; font-size: 0.9rem; }
         .footer { text-align: center; margin-top: 3rem; font-size: 0.75rem; color: #333; }
+        @media (max-width: 600px) {
+            .header { flex-direction: column; gap: 0.5rem; padding: 0.75rem 1rem; }
+            .header .links { flex-wrap: wrap; justify-content: center; gap: 0.5rem; }
+            .container { padding: 1rem; }
+            h1 { font-size: 1.2rem; }
+            .log-item { padding: 0.5rem 0.75rem; }
+            .log-action { font-size: 0.8rem; }
+            .log-detail { font-size: 0.75rem; }
+        }
     </style>
 </head>
 <body>

@@ -263,6 +263,19 @@
             font-size: 0.75rem;
             color: #333;
         }
+        @media (max-width: 600px) {
+            .header { flex-direction: column; gap: 0.5rem; padding: 0.75rem 1rem; }
+            .header .user-area { flex-wrap: wrap; justify-content: center; gap: 0.5rem; }
+            .container { padding: 1rem; }
+            h1 { font-size: 1.2rem; }
+            .note-form { padding: 1rem; }
+            .note-form textarea { min-height: 60px; }
+            .approve-row { flex-direction: column; }
+            .approve-row select { width: 100%; }
+            .ai-rankings { gap: 0.2rem; }
+            .ai-rank-item { font-size: 0.65rem; }
+            .parsed-fields { gap: 0.3rem; }
+        }
     </style>
 </head>
 <body>
