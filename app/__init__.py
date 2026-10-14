@@ -174,6 +174,44 @@ def filter_available_employees(employees, parsed_when):
     return available
 
 
+@app.route("/dashboard")
+def dashboard():
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+    db = get_db()
+    user = db.execute("SELECT * FROM users WHERE id = ?", (session["user_id"],)).fetchone()
+    notes = db.execute("SELECT * FROM notes WHERE user_id = ? ORDER BY created_at DESC", (session["user_id"],)).fetchall()
+    employees = db.execute("SELECT * FROM employees").fetchall()
+
+    total_notes = len(notes)
+    open_notes = sum(1 for n in notes if n["status"] == "open")
+    approved_notes = sum(1 for n in notes if n["status"] == "approved")
+
+    # Urgency breakdown
+    urgency_high = sum(1 for n in notes if n["parsed_urgency"] == "high")
+    urgency_medium = sum(1 for n in notes if n["parsed_urgency"] == "medium")
+    urgency_low = sum(1 for n in notes if n["parsed_urgency"] == "low")
+
+    # Reason breakdown
+    reasons = {}
+    for n in notes:
+        reason = n["parsed_what"] or "unspecified"
+        reasons[reason] = reasons.get(reason, 0) + 1
+
+    # Most assigned employees
+    assignments = {}
+    for n in notes:
+        if n["assigned_to"]:
+            assignments[n["assigned_to"]] = assignments.get(n["assigned_to"], 0) + 1
+
+    db.close()
+    return render_template("dashboard.html", user=user, total_notes=total_notes, open_notes=open_notes,
+                           approved_notes=approved_notes, urgency_high=urgency_high,
+                           urgency_medium=urgency_medium, urgency_low=urgency_low,
+                           reasons=reasons, assignments=assignments,
+                           total_employees=len(employees))
+
+
 @app.route("/add-note", methods=["POST"])
 def add_note():
     if "user_id" not in session:
