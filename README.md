@@ -1,5 +1,9 @@
 # AI Shift Manager
 
+**Live app:** http://ai-shift-manager.us-east-1.elasticbeanstalk.com
+
+**Tech stack:** Python (Flask), SQLite, AWS SES, AWS Elastic Beanstalk, GitHub
+
 An AI-powered shift scheduling application for shift supervisors and managers, built for the Catholic University of America AI Vibe Coding Competition (Fall 2026).
 
 ## The Problem
