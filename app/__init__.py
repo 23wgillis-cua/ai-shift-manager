@@ -37,8 +37,20 @@ def init_db():
             user_id INTEGER NOT NULL,
             body TEXT NOT NULL,
             status TEXT DEFAULT 'open',
+            assigned_to TEXT,
             created_at TEXT NOT NULL,
+            approved_at TEXT,
             FOREIGN KEY (user_id) REFERENCES users (id)
+        )
+        """
+    )
+    db.execute(
+        """
+        CREATE TABLE IF NOT EXISTS employees (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL,
+            email TEXT,
+            role TEXT DEFAULT 'officer'
         )
         """
     )
@@ -48,7 +60,20 @@ def init_db():
             "INSERT INTO users (username, password_hash, display_name, role, email) VALUES (?, ?, ?, ?, ?)",
             ("admin", generate_password_hash("admin"), "Admin", "manager", "admin@example.com"),
         )
-        db.commit()
+    emp_count = db.execute("SELECT COUNT(*) FROM employees").fetchone()[0]
+    if emp_count == 0:
+        db.executemany(
+            "INSERT INTO employees (name, email, role) VALUES (?, ?, ?)",
+            [
+                ("Mike Rodriguez", "mike@example.com", "officer"),
+                ("Sarah Chen", "sarah@example.com", "officer"),
+                ("James O'Brien", "james@example.com", "officer"),
+                ("Maria Santos", "maria@example.com", "supervisor"),
+                ("Tony Walker", "tony@example.com", "officer"),
+                ("Priya Patel", "priya@example.com", "officer"),
+            ],
+        )
+    db.commit()
     db.close()
 
 
@@ -61,8 +86,9 @@ def index():
     notes = db.execute(
         "SELECT * FROM notes WHERE user_id = ? ORDER BY created_at DESC", (session["user_id"],)
     ).fetchall()
+    employees = db.execute("SELECT * FROM employees ORDER BY name").fetchall()
     db.close()
-    return render_template("index.html", user=user, notes=notes)
+    return render_template("index.html", user=user, notes=notes, employees=employees)
 
 
 @app.route("/add-note", methods=["POST"])
@@ -75,6 +101,22 @@ def add_note():
         db.execute(
             "INSERT INTO notes (user_id, body, status, created_at) VALUES (?, ?, 'open', ?)",
             (session["user_id"], body, datetime.now().strftime("%Y-%m-%d %H:%M")),
+        )
+        db.commit()
+        db.close()
+    return redirect(url_for("index"))
+
+
+@app.route("/approve/<int:note_id>", methods=["POST"])
+def approve_note(note_id):
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+    assigned_to = request.form.get("assigned_to", "").strip()
+    if assigned_to:
+        db = get_db()
+        db.execute(
+            "UPDATE notes SET status = 'approved', assigned_to = ?, approved_at = ? WHERE id = ? AND user_id = ?",
+            (assigned_to, datetime.now().strftime("%Y-%m-%d %H:%M"), note_id, session["user_id"]),
         )
         db.commit()
         db.close()
