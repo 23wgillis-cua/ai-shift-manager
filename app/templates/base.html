@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}AI Shift Manager{% endblock %}</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #0f1923;
+            color: #e0e0e0;
+            line-height: 1.5;
+        }
+        /* Nav bar */
+        .navbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 1.5rem;
+            background: #0a1018;
+            border-bottom: 1px solid #1a2634;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .navbar .brand {
+            font-size: 1.1rem;
+            color: #4a9eff;
+            font-weight: 700;
+            letter-spacing: -0.3px;
+            padding: 0.75rem 0;
+        }
+        .navbar .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        .navbar .nav-links a {
+            color: #8899aa;
+            text-decoration: none;
+            font-size: 0.85rem;
+            padding: 0.5rem 0.8rem;
+            border-radius: 6px;
+            transition: all 0.15s ease;
+        }
+        .navbar .nav-links a:hover {
+            color: #4a9eff;
+            background: #152033;
+        }
+        .navbar .nav-links a.active {
+            color: #4a9eff;
+            background: #152033;
+        }
+        .navbar .nav-links a.signout {
+            color: #ff6a6a;
+        }
+        .navbar .nav-links a.signout:hover {
+            background: #2a1a1a;
+        }
+        .navbar .welcome {
+            font-size: 0.8rem;
+            color: #556677;
+            padding-right: 0.5rem;
+        }
+        /* Container */
+        .container {
+            max-width: 760px;
+            margin: 0 auto;
+            padding: 2rem 1.5rem;
+        }
+        /* Typography */
+        h1 {
+            font-size: 1.5rem;
+            color: #e0e0e0;
+            margin-bottom: 0.25rem;
+            font-weight: 700;
+        }
+        h2 {
+            font-size: 1.1rem;
+            color: #8899aa;
+            margin: 1.5rem 0 1rem;
+            font-weight: 600;
+        }
+        .subtitle {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 1.5rem;
+        }
+        /* Cards */
+        .card {
+            background: #152033;
+            border-radius: 8px;
+            padding: 1.25rem;
+            margin-bottom: 1rem;
+            transition: box-shadow 0.15s ease;
+        }
+        .card:hover {
+            box-shadow: 0 2px 12px rgba(0,0,0,0.2);
+        }
+        /* Forms */
+        label {
+            display: block;
+            font-size: 0.85rem;
+            color: #8899aa;
+            margin-bottom: 0.5rem;
+        }
+        input, textarea, select {
+            width: 100%;
+            padding: 0.7rem 0.8rem;
+            border: 1px solid #2a3a4a;
+            border-radius: 6px;
+            background: #0d1520;
+            color: #e0e0e0;
+            font-size: 0.95rem;
+            font-family: inherit;
+            transition: border-color 0.15s ease, box-shadow 0.15s ease;
+        }
+        input:focus, textarea:focus, select:focus {
+            outline: none;
+            border-color: #4a9eff;
+            box-shadow: 0 0 0 3px rgba(74,158,255,0.1);
+        }
+        textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+        /* Buttons */
+        .btn {
+            padding: 0.65rem 1.5rem;
+            background: #4a9eff;
+            color: #fff;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+        .btn:hover {
+            background: #3a8ee0;
+            transform: translateY(-1px);
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
+        .btn-sm {
+            padding: 0.4rem 1rem;
+            font-size: 0.8rem;
+        }
+        .btn-danger {
+            padding: 0.35rem 0.8rem;
+            font-size: 0.75rem;
+            background: #ff4a4a;
+        }
+        .btn-danger:hover { background: #d33a3a; }
+        /* Notifications */
+        .notification {
+            padding: 0.75rem 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+            animation: slideDown 0.3s ease;
+        }
+        .notification.success {
+            background: #1a2a1a;
+            color: #8bc34a;
+            border: 1px solid #2a3a1a;
+        }
+        .notification.warning {
+            background: #2a2a1a;
+            color: #d4a834;
+            border: 1px solid #3a3a1a;
+        }
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-8px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        /* Badges */
+        .badge {
+            display: inline-block;
+            padding: 0.15rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-weight: 600;
+        }
+        .badge-open { background: #2a3a1a; color: #b8d68a; }
+        .badge-approved { background: #1a2a3a; color: #4a9eff; }
+        /* Tags */
+        .tag {
+            display: inline-block;
+            padding: 0.2rem 0.6rem;
+            border-radius: 4px;
+            font-size: 0.72rem;
+            background: #1a2634;
+            color: #8aa0b8;
+        }
+        .tag.urgency-high { background: #2a1a1a; color: #ff6a6a; }
+        .tag.urgency-medium { background: #2a2a1a; color: #d4a834; }
+        .tag.urgency-low { background: #1a2a1a; color: #6a9a4a; }
+        /* Footer */
+        .footer {
+            text-align: center;
+            margin-top: 3rem;
+            font-size: 0.75rem;
+            color: #333;
+        }
+        /* AI recommendation */
+        .ai-rec {
+            background: #0d1520;
+            border: 1px solid #2a3a4a;
+            border-radius: 8px;
+            padding: 0.75rem;
+            margin-bottom: 0.75rem;
+        }
+        .ai-rec-badge {
+            display: inline-block;
+            font-size: 0.6rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #4a9eff;
+            background: #1a2634;
+            padding: 0.15rem 0.5rem;
+            border-radius: 4px;
+            margin-bottom: 0.5rem;
+            font-weight: 700;
+        }
+        .ai-rec-name { font-size: 0.9rem; color: #c8d0d8; margin-bottom: 0.25rem; }
+        .ai-rec-reason { font-size: 0.8rem; color: #8899aa; margin-bottom: 0.5rem; }
+        .ai-rankings { display: flex; flex-wrap: wrap; gap: 0.3rem; }
+        .ai-rank-item { font-size: 0.7rem; color: #667788; background: #152033; padding: 0.15rem 0.4rem; border-radius: 4px; }
+        /* Responsive */
+        @media (max-width: 600px) {
+            .navbar { flex-direction: column; gap: 0.5rem; padding: 0 1rem; }
+            .navbar .nav-links { flex-wrap: wrap; justify-content: center; gap: 0.25rem; }
+            .navbar .nav-links a { padding: 0.4rem 0.6rem; font-size: 0.8rem; }
+            .container { padding: 1rem; }
+            h1 { font-size: 1.2rem; }
+            .card { padding: 1rem; }
+            textarea { min-height: 60px; }
+        }
+    </style>
+    {% block extra_style %}{% endblock %}
+</head>
+<body>
+    {% block nav %}
+    <nav class="navbar">
+        <span class="brand">AI Shift Manager</span>
+        <div class="nav-links">
+            {% block nav_links %}
+            <a href="/">Notes</a>
+            <a href="/calendar">Calendar</a>
+            <a href="/availability">Team</a>
+            <a href="/dashboard">Dashboard</a>
+            <a href="/audit">Audit Log</a>
+            {% endblock %}
+            <a href="/logout" class="signout">Sign Out</a>
+        </div>
+    </nav>
+    {% endblock %}
+    <div class="container">
+        {% block content %}{% endblock %}
+        <p class="footer">CUA Busch School AI Vibe Coding Contest, Fall 2026</p>
+    </div>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

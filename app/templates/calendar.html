@@ -1,197 +1,76 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Shift Manager - Calendar</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #0f1923;
-            color: #e0e0e0;
-        }
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem 2rem;
-            border-bottom: 1px solid #1a2634;
-        }
-        .header .brand { font-size: 1.1rem; color: #4a9eff; font-weight: 600; }
-        .header .links { display: flex; gap: 1rem; }
-        .header a { color: #4a9eff; text-decoration: none; font-size: 0.85rem; }
-        .header a:hover { text-decoration: underline; }
-        .container { max-width: 900px; margin: 0 auto; padding: 2rem; }
-        .cal-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 1.5rem;
-        }
-        .cal-header h1 {
-            font-size: 1.5rem;
-            color: #4a9eff;
-        }
-        .cal-nav { display: flex; gap: 1rem; align-items: center; }
-        .cal-nav a {
-            color: #4a9eff;
-            text-decoration: none;
-            font-size: 1.2rem;
-            padding: 0.4rem 0.8rem;
-            border-radius: 4px;
-            background: #1a2634;
-        }
-        .cal-nav a:hover { background: #2a3a4a; }
-        .cal-nav .current { font-size: 1.1rem; color: #c8d0d8; }
-        .cal-table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .cal-table th {
-            font-size: 0.8rem;
-            color: #555;
-            padding: 0.5rem;
-            text-align: center;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .cal-table td {
-            border: 1px solid #1a2634;
-            padding: 0;
-            height: 90px;
-            vertical-align: top;
-        }
-        .cal-day {
-            padding: 0.4rem;
-            min-height: 90px;
-        }
-        .cal-day .day-num {
-            font-size: 0.85rem;
-            color: #8899aa;
-            font-weight: 600;
-            margin-bottom: 0.25rem;
-        }
-        .cal-day.empty { background: #0a1018; }
-        .cal-day.has-notes { background: #152033; }
-        .cal-day.today .day-num { color: #4a9eff; }
-        .cal-note {
-            font-size: 0.7rem;
-            padding: 0.2rem 0.35rem;
-            border-radius: 3px;
-            margin-bottom: 0.2rem;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
-        }
-        .cal-note.open {
-            background: #2a3a1a;
-            color: #b8d68a;
-            border-left: 2px solid #8bc34a;
-        }
-        .cal-note.approved {
-            background: #1a2a3a;
-            color: #4a9eff;
-            border-left: 2px solid #4a9eff;
-        }
-        .cal-note .note-text {
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .legend {
-            display: flex;
-            gap: 1.5rem;
-            margin-top: 1.5rem;
-            font-size: 0.8rem;
-            color: #666;
-        }
-        .legend-item { display: flex; align-items: center; gap: 0.4rem; }
-        .legend-dot {
-            width: 10px;
-            height: 10px;
-            border-radius: 2px;
-        }
-        .legend-dot.open { background: #8bc34a; }
-        .legend-dot.approved { background: #4a9eff; }
-        .footer { text-align: center; margin-top: 3rem; font-size: 0.75rem; color: #333; }
-        @media (max-width: 600px) {
-            .header { flex-direction: column; gap: 0.5rem; padding: 0.75rem 1rem; }
-            .header .links { flex-wrap: wrap; justify-content: center; gap: 0.5rem; }
-            .container { padding: 0.5rem; }
-            .cal-header h1 { font-size: 1.2rem; }
-            .cal-table th { font-size: 0.6rem; padding: 0.3rem; }
-            .cal-table td { height: 60px; }
-            .cal-day { padding: 0.2rem; min-height: 60px; }
-            .cal-day .day-num { font-size: 0.7rem; }
-            .cal-note { font-size: 0.6rem; padding: 0.1rem 0.2rem; }
-            .legend { flex-wrap: wrap; gap: 0.75rem; }
-        }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <span class="brand">AI Shift Manager</span>
-        <div class="links">
-            <a href="/">Notes</a>
-            <a href="/availability">Availability</a>
-            <a href="/dashboard">Dashboard</a>
-            <a href="/audit">Audit Log</a>
-            <a href="/logout">Sign Out</a>
-        </div>
-    </div>
-    <div class="container">
-        <div class="cal-header">
-            <h1>{{ month_name }} {{ year }}</h1>
-            <div class="cal-nav">
-                <a href="/calendar?year={{ prev_year }}&month={{ prev_month }}">&larr;</a>
-                <span class="current">{{ month_name }}</span>
-                <a href="/calendar?year={{ next_year }}&month={{ next_month }}">&rarr;</a>
-            </div>
-        </div>
+{% extends "base.html" %}
 
-        <table class="cal-table">
-            <tr>
-                <th>Mon</th>
-                <th>Tue</th>
-                <th>Wed</th>
-                <th>Thu</th>
-                <th>Fri</th>
-                <th>Sat</th>
-                <th>Sun</th>
-            </tr>
-            {% for week in weeks %}
-            <tr>
-                {% for day in week %}
-                <td>
-                    {% if day %}
-                    <div class="cal-day{% if day.notes %} has-notes{% endif %}{% if day.is_today %} today{% endif %}">
-                        <div class="day-num">{{ day.day }}</div>
-                        {% for note in day.notes %}
-                        <div class="cal-note {{ note.status }}">
-                            <span class="note-text">{{ note.parsed_who or 'Unknown' }}: {{ note.parsed_what or '' }}</span>
-                        </div>
-                        {% endfor %}
-                    </div>
-                    {% else %}
-                    <div class="cal-day empty"></div>
-                    {% endif %}
-                </td>
+{% block title %}AI Shift Manager - Calendar{% endblock %}
+
+{% block extra_style %}
+    .cal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+    .cal-nav { display: flex; gap: 0.5rem; align-items: center; }
+    .cal-nav a {
+        color: #4a9eff; text-decoration: none; font-size: 1.1rem;
+        padding: 0.4rem 0.7rem; border-radius: 6px; background: #152033;
+        transition: background 0.15s ease;
+    }
+    .cal-nav a:hover { background: #2a3a4a; }
+    .cal-nav .current { font-size: 1.05rem; color: #c8d0d8; font-weight: 600; }
+    .cal-table { width: 100%; border-collapse: separate; border-spacing: 4px; }
+    .cal-table th { font-size: 0.7rem; color: #555; padding: 0.5rem; text-align: center; text-transform: uppercase; letter-spacing: 0.5px; }
+    .cal-table td { border: none; padding: 0; }
+    .cal-day { padding: 0.4rem; min-height: 80px; border-radius: 6px; background: #0d1520; }
+    .cal-day .day-num { font-size: 0.8rem; color: #8899aa; font-weight: 600; margin-bottom: 0.25rem; }
+    .cal-day.has-notes { background: #152033; }
+    .cal-day.today .day-num { color: #4a9eff; font-size: 0.95rem; }
+    .cal-note { font-size: 0.65rem; padding: 0.2rem 0.35rem; border-radius: 3px; margin-bottom: 0.2rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .cal-note.open { background: #2a3a1a; color: #b8d68a; border-left: 2px solid #8bc34a; }
+    .cal-note.approved { background: #1a2a3a; color: #4a9eff; border-left: 2px solid #4a9eff; }
+    .legend { display: flex; gap: 1.5rem; margin-top: 1rem; font-size: 0.8rem; color: #666; }
+    .legend-item { display: flex; align-items: center; gap: 0.4rem; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 3px; }
+    .legend-dot.open { background: #8bc34a; }
+    .legend-dot.approved { background: #4a9eff; }
+    @media (max-width: 600px) {
+        .cal-header h1 { font-size: 1.2rem; }
+        .cal-table th { font-size: 0.5rem; padding: 0.2rem; }
+        .cal-day { min-height: 50px; padding: 0.2rem; }
+        .cal-day .day-num { font-size: 0.7rem; }
+        .cal-note { font-size: 0.55rem; padding: 0.1rem 0.2rem; }
+        .legend { flex-wrap: wrap; gap: 0.5rem; }
+    }
+{% endblock %}
+
+{% block content %}
+<div class="cal-header">
+    <h1>{{ month_name }} {{ year }}</h1>
+    <div class="cal-nav">
+        <a href="/calendar?year={{ prev_year }}&month={{ prev_month }}">&larr;</a>
+        <span class="current">{{ month_name }} {{ year }}</span>
+        <a href="/calendar?year={{ next_year }}&month={{ next_month }}">&rarr;</a>
+    </div>
+</div>
+
+<table class="cal-table">
+    <tr><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th><th>Sun</th></tr>
+    {% for week in weeks %}
+    <tr>
+        {% for day in week %}
+        <td>
+            {% if day %}
+            <div class="cal-day{% if day.notes %} has-notes{% endif %}{% if day.is_today %} today{% endif %}">
+                <div class="day-num">{{ day.day }}</div>
+                {% for note in day.notes %}
+                <div class="cal-note {{ note.status }}">
+                    {{ note.parsed_who or 'Unknown' }}: {{ note.parsed_what or '' }}
+                </div>
                 {% endfor %}
-            </tr>
-            {% endfor %}
-        </table>
-
-        <div class="legend">
-            <div class="legend-item">
-                <span class="legend-dot open"></span> Open
             </div>
-            <div class="legend-item">
-                <span class="legend-dot approved"></span> Approved
-            </div>
-        </div>
+            {% endif %}
+        </td>
+        {% endfor %}
+    </tr>
+    {% endfor %}
+</table>
 
-        <p class="footer">CUA Busch School AI Vibe Coding Contest, Fall 2026</p>
-    </div>
-</body>
-</html>
+<div class="legend">
+    <div class="legend-item"><span class="legend-dot open"></span> Open</div>
+    <div class="legend-item"><span class="legend-dot approved"></span> Approved</div>
+</div>
+{% endblock %}
