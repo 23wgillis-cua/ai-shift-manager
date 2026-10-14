@@ -115,6 +115,18 @@
         .legend-dot.open { background: #8bc34a; }
         .legend-dot.approved { background: #4a9eff; }
         .footer { text-align: center; margin-top: 3rem; font-size: 0.75rem; color: #333; }
+        @media (max-width: 600px) {
+            .header { flex-direction: column; gap: 0.5rem; padding: 0.75rem 1rem; }
+            .header .links { flex-wrap: wrap; justify-content: center; gap: 0.5rem; }
+            .container { padding: 0.5rem; }
+            .cal-header h1 { font-size: 1.2rem; }
+            .cal-table th { font-size: 0.6rem; padding: 0.3rem; }
+            .cal-table td { height: 60px; }
+            .cal-day { padding: 0.2rem; min-height: 60px; }
+            .cal-day .day-num { font-size: 0.7rem; }
+            .cal-note { font-size: 0.6rem; padding: 0.1rem 0.2rem; }
+            .legend { flex-wrap: wrap; gap: 0.75rem; }
+        }
     </style>
 </head>
 <body>
