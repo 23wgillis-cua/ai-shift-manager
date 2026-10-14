@@ -1,377 +1,124 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Shift Manager</title>
-    <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            background: #0f1923;
-            color: #e0e0e0;
-        }
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 1rem 2rem;
-            border-bottom: 1px solid #1a2634;
-        }
-        .header .brand {
-            font-size: 1.1rem;
-            color: #4a9eff;
-            font-weight: 600;
-        }
-        .header .user-area {
-            display: flex;
-            align-items: center;
-            gap: 1rem;
-        }
-        .header .welcome {
-            font-size: 0.85rem;
-            color: #8899aa;
-        }
-        .logout-btn {
-            color: #4a9eff;
-            text-decoration: none;
-            font-size: 0.85rem;
-        }
-        .logout-btn:hover { text-decoration: underline; }
-        .container {
-            max-width: 750px;
-            margin: 0 auto;
-            padding: 2rem;
-        }
-        h1 {
-            font-size: 1.5rem;
-            color: #4a9eff;
-            margin-bottom: 0.25rem;
-        }
-        .subtitle {
-            font-size: 0.9rem;
-            color: #666;
-            margin-bottom: 1.5rem;
-        }
-        .notification {
-            padding: 0.75rem 1rem;
-            border-radius: 6px;
-            margin-bottom: 1.5rem;
-            font-size: 0.9rem;
-        }
-        .notification.success {
-            background: #1a2a1a;
-            color: #8bc34a;
-            border: 1px solid #2a3a1a;
-        }
-        .notification.warning {
-            background: #2a2a1a;
-            color: #d4a834;
-            border: 1px solid #3a3a1a;
-        }
-        .note-form {
-            background: #1a2634;
-            padding: 1.25rem;
-            border-radius: 8px;
-            margin-bottom: 2rem;
-        }
-        .note-form label {
-            display: block;
-            font-size: 0.85rem;
-            color: #8899aa;
-            margin-bottom: 0.5rem;
-        }
-        .note-form textarea {
-            width: 100%;
-            padding: 0.8rem;
-            border: 1px solid #2a3a4a;
-            border-radius: 4px;
-            background: #0d1520;
-            color: #e0e0e0;
-            font-size: 0.95rem;
-            font-family: inherit;
-            resize: vertical;
-            min-height: 80px;
-        }
-        .note-form textarea:focus {
-            outline: none;
-            border-color: #4a9eff;
-        }
-        .btn {
-            margin-top: 0.75rem;
-            padding: 0.6rem 1.5rem;
-            background: #4a9eff;
-            color: #fff;
-            border: none;
-            border-radius: 4px;
-            font-size: 0.9rem;
-            cursor: pointer;
-        }
-        .btn:hover { background: #3a8ee0; }
-        .btn-small {
-            padding: 0.4rem 1rem;
-            font-size: 0.8rem;
-        }
-        .notes-list h2 {
-            font-size: 1.1rem;
-            color: #8899aa;
-            margin-bottom: 1rem;
-        }
-        .note-item {
-            background: #152033;
-            padding: 1rem 1.25rem;
-            border-radius: 6px;
-            margin-bottom: 0.75rem;
-            border-left: 3px solid #4a9eff;
-        }
-        .note-item.approved {
-            border-left-color: #8bc34a;
-        }
-        .note-item .note-body {
-            font-size: 0.95rem;
-            color: #c8d0d8;
-            margin-bottom: 0.5rem;
-        }
-        .note-item .note-meta {
-            font-size: 0.75rem;
-            color: #555;
-            margin-bottom: 0.5rem;
-        }
-        .note-item .assigned {
-            font-size: 0.85rem;
-            color: #8bc34a;
-            margin-bottom: 0.5rem;
-        }
-        .note-item .email-status {
-            font-size: 0.75rem;
-            color: #888;
-            margin-top: 0.25rem;
-        }
-        .status-badge {
-            display: inline-block;
-            padding: 0.15rem 0.6rem;
-            border-radius: 3px;
-            font-size: 0.7rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .status-open { background: #2a3a1a; color: #b8d68a; }
-        .status-approved { background: #1a2a3a; color: #4a9eff; }
-        .approve-section {
-            margin-top: 0.75rem;
-            padding-top: 0.75rem;
-            border-top: 1px solid #1a2634;
-        }
-        .approve-section label {
-            font-size: 0.8rem;
-            color: #8899aa;
-            display: block;
-            margin-bottom: 0.4rem;
-        }
-        .approve-row {
-            display: flex;
-            gap: 0.5rem;
-        }
-        .approve-row select {
-            flex: 1;
-            padding: 0.5rem;
-            border: 1px solid #2a3a4a;
-            border-radius: 4px;
-            background: #0d1520;
-            color: #e0e0e0;
-            font-size: 0.85rem;
-        }
-        .approve-row select:focus {
-            outline: none;
-            border-color: #4a9eff;
-        }
-        .empty {
-            text-align: center;
-            color: #444;
-            padding: 2rem;
-            font-size: 0.9rem;
-        }
-        .parsed-fields {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.4rem;
-            margin-bottom: 0.5rem;
-        }
-        .parsed-tag {
-            display: inline-block;
-            padding: 0.2rem 0.6rem;
-            border-radius: 3px;
-            font-size: 0.72rem;
-            background: #1a2634;
-            color: #8aa0b8;
-        }
-        .parsed-tag.urgency-high {
-            background: #2a1a1a;
-            color: #ff6a6a;
-        }
-        .parsed-tag.urgency-medium {
-            background: #2a2a1a;
-            color: #d4a834;
-        }
-        .parsed-tag.urgency-low {
-            background: #1a2a1a;
-            color: #6a9a4a;
-        }
-        .ai-recommendation {
-            background: #0d1520;
-            border: 1px solid #2a3a4a;
-            border-radius: 6px;
-            padding: 0.75rem;
-            margin-bottom: 0.75rem;
-        }
-        .ai-badge {
-            display: inline-block;
-            font-size: 0.65rem;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #4a9eff;
-            background: #1a2634;
-            padding: 0.15rem 0.5rem;
-            border-radius: 3px;
-            margin-bottom: 0.5rem;
-        }
-        .ai-rec-name {
-            font-size: 0.9rem;
-            color: #c8d0d8;
-            margin-bottom: 0.25rem;
-        }
-        .ai-rec-reason {
-            font-size: 0.8rem;
-            color: #8899aa;
-            margin-bottom: 0.5rem;
-        }
-        .ai-rankings {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 0.3rem;
-        }
-        .ai-rank-item {
-            font-size: 0.7rem;
-            color: #667788;
-            background: #152033;
-            padding: 0.15rem 0.4rem;
-            border-radius: 3px;
-        }
-        .footer {
-            text-align: center;
-            margin-top: 3rem;
-            font-size: 0.75rem;
-            color: #333;
-        }
-        @media (max-width: 600px) {
-            .header { flex-direction: column; gap: 0.5rem; padding: 0.75rem 1rem; }
-            .header .user-area { flex-wrap: wrap; justify-content: center; gap: 0.5rem; }
-            .container { padding: 1rem; }
-            h1 { font-size: 1.2rem; }
-            .note-form { padding: 1rem; }
-            .note-form textarea { min-height: 60px; }
-            .approve-row { flex-direction: column; }
-            .approve-row select { width: 100%; }
-            .ai-rankings { gap: 0.2rem; }
-            .ai-rank-item { font-size: 0.65rem; }
-            .parsed-fields { gap: 0.3rem; }
-        }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <span class="brand">AI Shift Manager</span>
-        <div class="user-area">
-            {% if user %}<span class="welcome">{{ user.display_name }}</span>{% endif %}
-            <a href="/availability" class="logout-btn" style="margin-right: 0.75rem;">Availability</a>
-            <a href="/dashboard" class="logout-btn" style="margin-right: 0.75rem;">Dashboard</a>
-            <a href="/calendar" class="logout-btn" style="margin-right: 0.75rem;">Calendar</a>
-            <a href="/logout" class="logout-btn">Sign Out</a>
-        </div>
-    </div>
-    <div class="container">
-        <h1>Shift Notes</h1>
-        <p class="subtitle">Type a plain-English note about a scheduling change.</p>
+{% extends "base.html" %}
 
-        {% if session.get('email_sent') is not none %}
-        <div class="notification {% if session.get('email_sent') %}success{% else %}warning{% endif %}">
-            {% if session.get('email_sent') %}
-                Email notification sent to the assigned employee.
-            {% else %}
-                Swap approved, but email notification could not be sent. Check SES settings.
-            {% endif %}
+{% block title %}AI Shift Manager - Shift Notes{% endblock %}
+
+{% block extra_style %}
+    .note-item {
+        background: #152033;
+        padding: 1rem 1.25rem;
+        border-radius: 8px;
+        margin-bottom: 0.75rem;
+        border-left: 3px solid #4a9eff;
+        transition: box-shadow 0.15s ease;
+    }
+    .note-item:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.2); }
+    .note-item.approved { border-left-color: #8bc34a; }
+    .note-body { font-size: 0.95rem; color: #c8d0d8; margin-bottom: 0.5rem; }
+    .note-meta { font-size: 0.75rem; color: #555; margin-bottom: 0.5rem; }
+    .assigned { font-size: 0.85rem; color: #8bc34a; margin-bottom: 0.5rem; }
+    .email-status { font-size: 0.75rem; color: #888; margin-top: 0.25rem; }
+    .parsed-fields { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.5rem; }
+    .approve-section { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #1a2634; }
+    .approve-row { display: flex; gap: 0.5rem; }
+    .approve-row select { flex: 1; }
+    .empty { text-align: center; color: #444; padding: 2rem; font-size: 0.9rem; }
+    .filter-note { font-size: 0.7rem; color: #555; margin-top: 0.4rem; }
+    .note-form { margin-bottom: 1.5rem; }
+    @media (max-width: 600px) {
+        .approve-row { flex-direction: column; }
+        .approve-row select { width: 100%; }
+    }
+{% endblock %}
+
+{% block content %}
+<h1>Shift Notes</h1>
+<p class="subtitle">Type a plain-English note about a scheduling change. The AI will parse it automatically.</p>
+
+{% if session.get('email_sent') is not none %}
+<div class="notification {% if session.get('email_sent') %}success{% else %}warning{% endif %}" id="auto-dismiss">
+    {% if session.get('email_sent') %}
+        Email notification sent to the assigned employee.
+    {% else %}
+        Swap approved, but email notification could not be sent. Check SES settings.
+    {% endif %}
+</div>
+{% endif %}
+
+<div class="card note-form">
+    <form method="POST" action="/add-note">
+        <label for="body">What happened?</label>
+        <textarea id="body" name="body" placeholder="e.g. Mike has a funeral Wednesday and can't come to work" required autofocus></textarea>
+        <button type="submit" class="btn" style="margin-top: 0.75rem;">Save Note</button>
+    </form>
+</div>
+
+<h2>Recent Notes</h2>
+{% if notes %}
+    {% for note in notes %}
+    <div class="note-item{% if note.status == 'approved' %} approved{% endif %}">
+        <p class="note-body">{{ note.body }}</p>
+        <div class="parsed-fields">
+            {% if note.parsed_who %}<span class="tag">Who: {{ note.parsed_who }}</span>{% endif %}
+            {% if note.parsed_what %}<span class="tag">Reason: {{ note.parsed_what }}</span>{% endif %}
+            {% if note.parsed_when and note.parsed_when != 'unspecified' %}<span class="tag">When: {{ note.parsed_when }}</span>{% endif %}
+            {% if note.parsed_urgency %}<span class="tag urgency-{{ note.parsed_urgency }}">Urgency: {{ note.parsed_urgency }}</span>{% endif %}
         </div>
+        <p class="note-meta">
+            {{ note.created_at }}
+            <span class="badge badge-{{ note.status }}">{{ note.status }}</span>
+        </p>
+        {% if note.status == 'approved' and note.assigned_to %}
+        <p class="assigned">Assigned to: {{ note.assigned_to }}</p>
+        <p class="email-status">Notification email sent on {{ note.approved_at }}</p>
         {% endif %}
-
-        <div class="note-form">
-            <form method="POST" action="/add-note">
-                <label for="body">What happened?</label>
-                <textarea id="body" name="body" placeholder="e.g. Mike has a funeral Wednesday and can't come to work" required></textarea>
-                <button type="submit" class="btn">Save Note</button>
+        {% if note.status == 'open' %}
+        <div class="approve-section">
+            {% if recommendations.get(note.id) %}
+            <div class="ai-rec">
+                <div class="ai-rec-badge">AI Recommendation</div>
+                <p class="ai-rec-name">Recommended: <strong>{{ recommendations[note.id].recommended }}</strong></p>
+                <p class="ai-rec-reason">{{ recommendations[note.id].reasoning }}</p>
+                {% if recommendations[note.id].rankings %}
+                <div class="ai-rankings">
+                    {% for r in recommendations[note.id].rankings[:5] %}
+                    <span class="ai-rank-item">{{ r.name }} ({{ r.score }}/10)</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+            <form method="POST" action="/approve/{{ note.id }}">
+                <label>Assign coverage to:</label>
+                <div class="approve-row">
+                    <select name="assigned_to" required>
+                        <option value="">Select an employee...</option>
+                        {% for emp in available_employees[note.id] %}
+                        <option value="{{ emp.name }}">{{ emp.name }} ({{ emp.role }})</option>
+                        {% endfor %}
+                    </select>
+                    <button type="submit" class="btn btn-sm">Approve Swap</button>
+                </div>
+                {% if available_employees[note.id]|length < all_employees|length %}
+                <p class="filter-note">{{ all_employees|length - available_employees[note.id]|length }} employee(s) excluded by availability for this day.</p>
+                {% endif %}
             </form>
         </div>
-
-        <div class="notes-list">
-            <h2>Recent Notes</h2>
-            {% if notes %}
-                {% for note in notes %}
-                <div class="note-item{% if note.status == 'approved' %} approved{% endif %}">
-                    <p class="note-body">{{ note.body }}</p>
-                    <div class="parsed-fields">
-                        {% if note.parsed_who %}<span class="parsed-tag">Who: {{ note.parsed_who }}</span>{% endif %}
-                        {% if note.parsed_what %}<span class="parsed-tag">Reason: {{ note.parsed_what }}</span>{% endif %}
-                        {% if note.parsed_when and note.parsed_when != 'unspecified' %}<span class="parsed-tag">When: {{ note.parsed_when }}</span>{% endif %}
-                        {% if note.parsed_urgency %}<span class="parsed-tag urgency-{{ note.parsed_urgency }}">Urgency: {{ note.parsed_urgency }}</span>{% endif %}
-                    </div>
-                    <p class="note-meta">
-                        {{ note.created_at }}
-                        <span class="status-badge status-{{ note.status }}">{{ note.status }}</span>
-                    </p>
-                    {% if note.status == 'approved' and note.assigned_to %}
-                    <p class="assigned">Assigned to: {{ note.assigned_to }}</p>
-                    <p class="email-status">Notification email sent on {{ note.approved_at }}</p>
-                    {% endif %}
-                    {% if note.status == 'open' %}
-                    <div class="approve-section">
-                        {% if recommendations.get(note.id) %}
-                        <div class="ai-recommendation">
-                            <div class="ai-badge">AI Recommendation</div>
-                            <p class="ai-rec-name">Recommended: <strong>{{ recommendations[note.id].recommended }}</strong></p>
-                            <p class="ai-rec-reason">{{ recommendations[note.id].reasoning }}</p>
-                            {% if recommendations[note.id].rankings %}
-                            <div class="ai-rankings">
-                                {% for r in recommendations[note.id].rankings[:5] %}
-                                <span class="ai-rank-item">{{ r.name }} ({{ r.score }}/10)</span>
-                                {% endfor %}
-                            </div>
-                            {% endif %}
-                        </div>
-                        {% endif %}
-                        <form method="POST" action="/approve/{{ note.id }}">
-                            <label>Assign coverage to:</label>
-                            <div class="approve-row">
-                                <select name="assigned_to" required>
-                                    <option value="">Select an employee...</option>
-                                    {% for emp in available_employees[note.id] %}
-                                    <option value="{{ emp.name }}">{{ emp.name }} ({{ emp.role }})</option>
-                                    {% endfor %}
-                                </select>
-                                <button type="submit" class="btn btn-small">Approve Swap</button>
-                            </div>
-                            {% if available_employees[note.id]|length < all_employees|length %}
-                            <p style="font-size: 0.7rem; color: #555; margin-top: 0.4rem;">Filtered by availability: {{ all_employees|length - available_employees[note.id]|length }} employee(s) excluded for this day.</p>
-                            {% endif %}
-                        </form>
-                    </div>
-                    {% endif %}
-                </div>
-                {% endfor %}
-            {% else %}
-                <p class="empty">No notes yet. Add one above.</p>
-            {% endif %}
-        </div>
-
-        <p class="footer">CUA Busch School AI Vibe Coding Contest, Fall 2026</p>
+        {% endif %}
     </div>
-</body>
-</html>
+    {% endfor %}
+{% else %}
+    <div class="card empty">
+        No notes yet. Add one above to get started.
+    </div>
+{% endif %}
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    setTimeout(function() {
+        var el = document.getElementById('auto-dismiss');
+        if (el) { el.style.opacity = '0'; el.style.transition = 'opacity 0.5s'; setTimeout(function(){el.style.display='none';}, 500); }
+    }, 4000);
+</script>
+{% endblock %}
