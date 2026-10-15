@@ -104,6 +104,20 @@ def init_db():
             "INSERT INTO users (username, password_hash, display_name, role, email) VALUES (?, ?, ?, ?, ?)",
             ("admin", generate_password_hash(admin_pass), "Admin", "manager", "gillisw@cua.edu"),
         )
+    else:
+        # Migrate: ensure demo account exists and admin password is updated
+        admin_pass = os.environ.get("ADMIN_PASSWORD", "ChangeMeInProduction_2026!")
+        demo_user = db.execute("SELECT * FROM users WHERE username = 'demo'").fetchone()
+        if not demo_user:
+            db.execute(
+                "INSERT INTO users (username, password_hash, display_name, role, email) VALUES (?, ?, ?, ?, ?)",
+                ("demo", generate_password_hash("demo"), "Demo Manager", "demo", None),
+            )
+        # Always update admin password from env var
+        db.execute(
+            "UPDATE users SET password_hash = ? WHERE username = 'admin'",
+            (generate_password_hash(admin_pass),),
+        )
     emp_count = db.execute("SELECT COUNT(*) FROM employees").fetchone()[0]
     if emp_count == 0:
         db.executemany(
