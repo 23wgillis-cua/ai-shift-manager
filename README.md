@@ -71,15 +71,15 @@ Flask App (gunicorn, port 8000)
 | Business Impact & Scalability | 10 | Replaces hours of manual schedule juggling per week. Availability-aware coverage filtering excludes unavailable employees automatically. CSV export for reporting up the chain. Audit log for compliance. SQLite prototype with PostgreSQL production path. AWS Free Tier deployment. |
 | GitHub Transparency | 10 | 31+ commits showing iterative build from skeleton to full-featured app. CI badge in README. Clean commit messages documenting each feature addition. Conventional commit format. |
 | Documentation & Communication | 10 | This README with problem statement, solution, tech stack, rubric alignment, and demo credentials. THESIS.md with project rationale. Live app link and tech stack at the top of the README. |
-| Deployment & Live Demo | 10 | Live at http://ai-shift-manager.us-east-1.elasticbeanstalk.com on AWS Elastic Beanstalk (t3.micro, Free Tier). Working login (admin/admin). Full swap flow: note input, AI parsing, coverage recommendation, approval, email notification. Calendar, dashboard, audit log, and CSV export all functional. |
+| Deployment & Live Demo | 10 | Live at http://ai-shift-manager.us-east-1.elasticbeanstalk.com on AWS Elastic Beanstalk (t3.micro, Free Tier). Working login (demo/demo). Full swap flow: note input, AI parsing, coverage recommendation, approval, email notification. Calendar, dashboard, audit log, and CSV export all functional. |
 
 ## Demo Credentials
 
 | URL | Credentials |
 | --- | --- |
-| http://ai-shift-manager.us-east-1.elasticbeanstalk.com | Username: `admin` / Password: `admin` |
+| http://ai-shift-manager.us-east-1.elasticbeanstalk.com | Username: `demo` / Password: `demo` |
 
-Log in with the demo account and try the full flow: type a shift note, see the AI parse it into who/what/when/urgency, get a coverage recommendation from the LLM, approve a swap, and an email notification goes out via AWS SES.
+Log in with the demo account and try the full flow: type a shift note, see the AI parse it into who/what/when/urgency, get a coverage recommendation from the LLM, and approve a swap. The demo account logs email notifications instead of sending real email; the admin account (separate password, not in this repo) sends real SES emails.
 
 ## Status
 

@@ -93,9 +93,16 @@ def init_db():
     )
     count = db.execute("SELECT COUNT(*) FROM users").fetchone()[0]
     if count == 0:
+        # Demo account for judges - cannot send real email
         db.execute(
             "INSERT INTO users (username, password_hash, display_name, role, email) VALUES (?, ?, ?, ?, ?)",
-            ("admin", generate_password_hash("admin"), "Admin", "manager", "gillisw@cua.edu"),
+            ("demo", generate_password_hash("demo"), "Demo Manager", "demo", None),
+        )
+        # Real admin account - password from env var, not in the repo
+        admin_pass = os.environ.get("ADMIN_PASSWORD", "ChangeMeInProduction_2026!")
+        db.execute(
+            "INSERT INTO users (username, password_hash, display_name, role, email) VALUES (?, ?, ?, ?, ?)",
+            ("admin", generate_password_hash(admin_pass), "Admin", "manager", "gillisw@cua.edu"),
         )
     emp_count = db.execute("SELECT COUNT(*) FROM employees").fetchone()[0]
     if emp_count == 0:
@@ -467,12 +474,14 @@ def approve_note(note_id):
             ).fetchone()
             db.close()
 
-            # Send email notification
-            emp_email = emp["email"] if emp else None
-            manager_name = user["display_name"] if user else "Manager"
-            sent = send_swap_notification(assigned_to, emp_email, note["body"], manager_name)
-            session["email_sent"] = sent
-            log_action("swap_approved", f"Note #{note_id} assigned to {assigned_to}, email sent: {sent}")
+            # Demo accounts log the notification instead of sending real email
+            user_role = user["role"] if user else "manager"
+            if user_role == "demo":
+                sent = False
+                log_action("swap_approved", f"Note #{note_id} assigned to {assigned_to}, email logged (demo account - not sent)")
+            else:
+                sent = send_swap_notification(assigned_to, emp_email, note["body"], manager_name)
+                log_action("swap_approved", f"Note #{note_id} assigned to {assigned_to}, email sent: {sent}")
         else:
             db.close()
     return redirect(url_for("index"))
