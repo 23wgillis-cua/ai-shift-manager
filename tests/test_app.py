@@ -29,7 +29,7 @@ def client():
     os.unlink(db_path)
 
 
-def login(client, username="admin", password="admin"):
+def login(client, username="demo", password="demo"):
     return client.post("/login", data={"username": username, "password": password}, follow_redirects=True)
 
 
@@ -53,7 +53,7 @@ def test_login_with_correct_credentials(client):
 
 
 def test_login_with_wrong_credentials(client):
-    rv = client.post("/login", data={"username": "admin", "password": "wrong"}, follow_redirects=True)
+    rv = client.post("/login", data={"username": "demo", "password": "wrong"}, follow_redirects=True)
     assert rv.status_code == 200
     assert b"Invalid username or password" in rv.data
 
