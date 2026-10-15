@@ -64,7 +64,7 @@ Flask App (gunicorn, port 8000)
 
 | Category | Points | How This Repo Addresses It |
 | --- | --- | --- |
-| Problem Definition & Relevance | 10 | Real pain point for 24/7 security operations supervisors. Built from firsthand experience as a DC MPD Special Police Officer managing shift coverage at MedStar Washington Hospital Center. |
+| Problem Definition & Relevance | 10 | Real pain point for 24/7 security operations supervisors. Built from firsthand police and security experience managing shift coverage. |
 | AI Feature Innovation & Integration | 20 | Two-stage AI pipeline: (1) AWS Bedrock LLM (Llama 3) parses plain-English notes into structured JSON (who, what, when, urgency) with regex fallback, (2) same LLM reasons through coverage recommendations by weighing availability, workload distribution, and role fit, returning ranked candidates with 1-10 scores and natural-language reasoning. |
 | Technical Execution & Code Quality | 20 | Flask app with SQLite database, session-based auth, AWS SES email integration, AWS Bedrock LLM integration, pytest test suite (12 tests), GitHub Actions CI pipeline. Shared base template with Jinja inheritance. Separate modules for note parsing, LLM integration, and route handling. |
 | User Experience & Design | 10 | Dark-themed responsive UI with shared sticky nav bar, smooth hover transitions, auto-dismissing notifications, mobile media queries. Pages: Notes (with AI recommendation cards), Calendar (month grid with color-coded notes), Team (add/remove employees, set availability), Dashboard (stat cards + bar charts), Audit Log. |
