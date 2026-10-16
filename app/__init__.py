@@ -137,16 +137,26 @@ def init_db():
     emp_count = db.execute("SELECT COUNT(*) FROM employees").fetchone()[0]
     if emp_count == 0:
         db.executemany(
-            "INSERT INTO employees (name, email, role, unavailable_days) VALUES (?, ?, ?, ?)",
+            "INSERT INTO employees (name, email, phone, role, unavailable_days) VALUES (?, ?, ?, ?, ?)",
             [
-                ("Mike Rodriguez", "23wgillis@gmail.com", "officer", ""),
-                ("Sarah Chen", "23wgillis@gmail.com", "officer", "monday"),
-                ("James O'Brien", "23wgillis@gmail.com", "officer", ""),
-                ("Maria Santos", "23wgillis@gmail.com", "supervisor", ""),
-                ("Tony Walker", "23wgillis@gmail.com", "officer", "friday"),
-                ("Priya Patel", "23wgillis@gmail.com", "officer", ""),
+                ("Mike Rodriguez", "demo@example.com", "555-0100", "officer", ""),
+                ("Sarah Chen", "demo@example.com", "555-0101", "officer", "monday"),
+                ("James O'Brien", "demo@example.com", "555-0102", "officer", ""),
+                ("Maria Santos", "demo@example.com", "555-0103", "supervisor", ""),
+                ("Tony Walker", "demo@example.com", "555-0104", "officer", "friday"),
+                ("Priya Patel", "demo@example.com", "555-0105", "officer", ""),
             ],
         )
+    else:
+        # Migrate: replace any real emails with demo emails, add phone column if missing
+        try:
+            db.execute("UPDATE employees SET email = 'demo@example.com' WHERE email IS NOT NULL AND email != 'demo@example.com'")
+        except Exception:
+            pass
+        try:
+            db.execute("UPDATE employees SET phone = '555-010' || CAST(id AS TEXT) WHERE phone IS NULL OR phone = ''")
+        except Exception:
+            pass
     db.commit()
     db.close()
 
