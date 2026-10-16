@@ -12,6 +12,7 @@ def client():
     db_fd, db_path = tempfile.mkstemp(suffix=".db")
     app_module.DB_PATH = db_path
     app_module.ses_client = None
+    app_module.sns_client = None
     app_module.BEDROCK_ENABLED = False
     llm_module.BEDROCK_ENABLED = False
     os.environ["SES_ENABLED"] = "0"
@@ -119,3 +120,84 @@ def test_cannot_add_note_without_login(client):
     rv = client.post("/add-note", data={"body": "test note"}, follow_redirects=True)
     assert rv.status_code == 200
     assert b"Sign In" in rv.data
+
+
+def test_dashboard_has_heatmap(client):
+    login(client)
+    client.post("/add-note", data={"body": "Mike is out Friday"}, follow_redirects=True)
+    rv = client.get("/dashboard")
+    assert rv.status_code == 200
+    assert b"heatmap" in rv.data
+
+
+def test_templates_page_loads(client):
+    login(client)
+    rv = client.get("/templates")
+    assert rv.status_code == 200
+    assert b"Shift Templates" in rv.data
+
+
+def test_create_and_apply_template(client):
+    login(client)
+    rv = client.post("/templates", data={
+        "action": "create_template",
+        "name": "Weekday Day",
+        "day_pattern": "monday, tuesday",
+        "start_time": "7am",
+        "end_time": "3pm",
+        "required_officers": "2",
+    }, follow_redirects=True)
+    assert rv.status_code == 200
+    assert b"Weekday Day" in rv.data
+    # Apply it
+    rv = client.post("/templates", data={"action": "apply_template", "template_id": "1"}, follow_redirects=True)
+    assert rv.status_code == 200
+
+
+def test_password_reset_page_loads(client):
+    rv = client.get("/reset-password")
+    assert rv.status_code == 200
+    assert b"Reset Password" in rv.data
+
+
+def test_password_reset_changes_password(client):
+    rv = client.post("/reset-password", data={
+        "username": "demo",
+        "new_password": "newpass",
+        "confirm_password": "newpass",
+    }, follow_redirects=True)
+    assert rv.status_code == 200
+    assert b"Password updated" in rv.data
+    # Old password should fail
+    rv = client.post("/login", data={"username": "demo", "password": "demo"}, follow_redirects=True)
+    assert b"Invalid username or password" in rv.data
+    # New password should work
+    rv = client.post("/login", data={"username": "demo", "password": "newpass"}, follow_redirects=True)
+    assert rv.status_code == 200
+    assert b"Shift Notes" in rv.data
+
+
+def test_conflict_check_api(client):
+    login(client)
+    rv = client.get("/api/conflict-check?name=Mike%20Rodriguez&when=friday")
+    assert rv.status_code == 200
+    data = rv.get_json()
+    assert "conflicts" in data
+    assert "unavailable" in data
+
+
+def test_llm_summary_api(client):
+    login(client)
+    rv = client.get("/api/llm-summary")
+    assert rv.status_code == 200
+    data = rv.get_json()
+    assert "summary" in data
+    assert "open" in data["summary"]
+
+
+def test_sms_disabled_in_test(client):
+    # SNS should be disabled in tests since we don't set SNS_ENABLED
+    from app import send_swap_sms
+    result = send_swap_sms("Test", "+15555555555", "test note")
+    # Should return False since sns_client is None
+    assert result is False

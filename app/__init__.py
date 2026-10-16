@@ -75,6 +75,7 @@ def init_db():
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             name TEXT NOT NULL,
             email TEXT,
+            phone TEXT,
             role TEXT DEFAULT 'officer',
             unavailable_days TEXT DEFAULT ''
         )
@@ -88,6 +89,21 @@ def init_db():
             action TEXT NOT NULL,
             detail TEXT,
             created_at TEXT NOT NULL
+        )
+        """
+    )
+    db.execute(
+        """
+        CREATE TABLE IF NOT EXISTS shift_templates (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER NOT NULL,
+            name TEXT NOT NULL,
+            day_pattern TEXT NOT NULL,
+            start_time TEXT,
+            end_time TEXT,
+            required_officers INTEGER DEFAULT 2,
+            created_at TEXT NOT NULL,
+            FOREIGN KEY (user_id) REFERENCES users (id)
         )
         """
     )
@@ -162,6 +178,26 @@ def send_swap_notification(assigned_name, assigned_email, note_body, manager_nam
         return False
 
 
+SNS_REGION = os.environ.get("SNS_REGION", "us-east-1")
+SNS_ENABLED = os.environ.get("SNS_ENABLED", "1") != "0"
+sns_client = boto3.client("sns", region_name=SNS_REGION) if SNS_ENABLED else None
+
+
+def send_swap_sms(assigned_name, assigned_phone, note_body):
+    """Send SMS notification via AWS SNS. Returns True on success."""
+    if not sns_client or not assigned_phone:
+        return False
+    message = f"Hi {assigned_name}, you have been assigned to cover a shift. Details: {note_body[:100]}. - AI Shift Manager"
+    try:
+        sns_client.publish(
+            PhoneNumber=assigned_phone,
+            Message=message,
+        )
+        return True
+    except ClientError:
+        return False
+
+
 @app.route("/")
 def index():
     if "user_id" not in session:
@@ -216,9 +252,10 @@ def availability():
         elif action == "add_employee":
             name = request.form.get("emp_name", "").strip()
             email = request.form.get("emp_email", "").strip()
+            phone = request.form.get("emp_phone", "").strip()
             role = request.form.get("emp_role", "officer").strip() or "officer"
             if name:
-                db.execute("INSERT INTO employees (name, email, role, unavailable_days) VALUES (?, ?, ?, '')", (name, email, role))
+                db.execute("INSERT INTO employees (name, email, phone, role, unavailable_days) VALUES (?, ?, ?, ?, '')", (name, email, phone, role))
             db.commit()
         elif action == "delete_employee":
             emp_id = request.form.get("emp_id", "")
@@ -279,12 +316,27 @@ def dashboard():
         if n["assigned_to"]:
             assignments[n["assigned_to"]] = assignments.get(n["assigned_to"], 0) + 1
 
+    # Heatmap: notes per day of week
+    day_names = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+    day_counts = {d: {"open": 0, "approved": 0, "total": 0} for d in day_names}
+    for n in notes:
+        when = (n["parsed_when"] or "").lower()
+        for day in day_names:
+            if day in when:
+                day_counts[day]["total"] += 1
+                if n["status"] == "open":
+                    day_counts[day]["open"] += 1
+                else:
+                    day_counts[day]["approved"] += 1
+                break
+
     db.close()
     return render_template("dashboard.html", user=user, total_notes=total_notes, open_notes=open_notes,
                            approved_notes=approved_notes, urgency_high=urgency_high,
                            urgency_medium=urgency_medium, urgency_low=urgency_low,
                            reasons=reasons, assignments=assignments,
-                           total_employees=len(employees))
+                           total_employees=len(employees), day_counts=day_counts,
+                           day_labels=["Mon","Tue","Wed","Thu","Fri","Sat","Sun"])
 
 
 @app.route("/audit")
@@ -494,11 +546,156 @@ def approve_note(note_id):
                 sent = False
                 log_action("swap_approved", f"Note #{note_id} assigned to {assigned_to}, email logged (demo account - not sent)")
             else:
+                emp_email = emp["email"] if emp else None
+                emp_phone = emp["phone"] if emp else None
+                manager_name = user["display_name"] if user else "Manager"
                 sent = send_swap_notification(assigned_to, emp_email, note["body"], manager_name)
-                log_action("swap_approved", f"Note #{note_id} assigned to {assigned_to}, email sent: {sent}")
+                sms_sent = send_swap_sms(assigned_to, emp_phone, note["body"])
+                log_action("swap_approved", f"Note #{note_id} assigned to {assigned_to}, email sent: {sent}, sms sent: {sms_sent}")
         else:
             db.close()
     return redirect(url_for("index"))
+
+
+@app.route("/api/conflict-check")
+def conflict_check():
+    """Check if an employee has conflicts for a given day."""
+    if "user_id" not in session:
+        return {"error": "not logged in"}, 401
+    emp_name = request.args.get("name", "").strip()
+    parsed_when = request.args.get("when", "").strip()
+    if not emp_name:
+        return {"conflicts": [], "unavailable": False}
+
+    db = get_db()
+    emp = db.execute("SELECT * FROM employees WHERE name = ?", (emp_name,)).fetchone()
+
+    # Check unavailability
+    unavailable = False
+    if emp and parsed_when:
+        unavail = (emp["unavailable_days"] or "").lower()
+        day_keywords = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
+        for day in day_keywords:
+            if day in parsed_when.lower() and day in unavail:
+                unavailable = True
+                break
+
+    # Check existing assignments for the same day
+    existing = db.execute(
+        "SELECT * FROM notes WHERE assigned_to = ? AND status = 'approved' AND parsed_when LIKE ?",
+        (emp_name, f"%{parsed_when}%"),
+    ).fetchall()
+
+    db.close()
+    return {
+        "conflicts": [{"body": n["body"], "when": n["parsed_when"]} for n in existing],
+        "unavailable": unavailable,
+        "count": len(existing),
+    }
+
+
+@app.route("/api/llm-summary")
+def llm_summary():
+    """Generate a one-line summary of the current shift coverage situation."""
+    if "user_id" not in session:
+        return {"summary": ""}, 401
+    db = get_db()
+    notes = db.execute(
+        "SELECT * FROM notes WHERE user_id = ? ORDER BY created_at DESC", (session["user_id"],)
+    ).fetchall()
+    db.close()
+
+    open_count = sum(1 for n in notes if n["status"] == "open")
+    approved_count = sum(1 for n in notes if n["status"] == "approved")
+    high_count = sum(1 for n in notes if n["parsed_urgency"] == "high" and n["status"] == "open")
+
+    summary = f"{open_count} open notes, {approved_count} approved, {high_count} high-urgency uncovered."
+    return {"summary": summary}
+
+
+@app.route("/templates", methods=["GET", "POST"])
+def shift_templates():
+    """Manage recurring shift templates."""
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+    db = get_db()
+    user = db.execute("SELECT * FROM users WHERE id = ?", (session["user_id"],)).fetchone()
+
+    if request.method == "POST":
+        action = request.form.get("action", "")
+        if action == "create_template":
+            name = request.form.get("name", "").strip()
+            day_pattern = request.form.get("day_pattern", "").strip()
+            start_time = request.form.get("start_time", "").strip()
+            end_time = request.form.get("end_time", "").strip()
+            required = request.form.get("required_officers", "2").strip()
+            if name and day_pattern:
+                db.execute(
+                    "INSERT INTO shift_templates (user_id, name, day_pattern, start_time, end_time, required_officers, created_at) VALUES (?, ?, ?, ?, ?, ?, ?)",
+                    (session["user_id"], name, day_pattern, start_time, end_time, int(required), datetime.now().strftime("%Y-%m-%d %H:%M")),
+                )
+                db.commit()
+                log_action("template_created", name)
+        elif action == "delete_template":
+            tid = request.form.get("template_id", "")
+            if tid:
+                db.execute("DELETE FROM shift_templates WHERE id = ? AND user_id = ?", (tid, session["user_id"]))
+                db.commit()
+        elif action == "apply_template":
+            tid = request.form.get("template_id", "")
+            tmpl = db.execute("SELECT * FROM shift_templates WHERE id = ? AND user_id = ?", (tid, session["user_id"])).fetchone()
+            if tmpl:
+                days = tmpl["day_pattern"].split(",")
+                for day in days:
+                    day = day.strip()
+                    body = f"Shift coverage needed for {day} {tmpl['start_time']}-{tmpl['end_time']} ({tmpl['name']})"
+                    db.execute(
+                        "INSERT INTO notes (user_id, body, status, parsed_who, parsed_what, parsed_when, parsed_urgency, created_at) VALUES (?, ?, 'open', '', 'shift template', ?, 'medium', ?)",
+                        (session["user_id"], body, day, datetime.now().strftime("%Y-%m-%d %H:%M")),
+                    )
+                db.commit()
+                log_action("template_applied", tmpl["name"])
+        db.close()
+        return redirect(url_for("shift_templates"))
+
+    templates = db.execute(
+        "SELECT * FROM shift_templates WHERE user_id = ? ORDER BY created_at DESC", (session["user_id"],)
+    ).fetchall()
+    db.close()
+    return render_template("templates.html", user=user, templates=templates)
+
+
+@app.route("/reset-password", methods=["GET", "POST"])
+def reset_password():
+    """Simple password reset flow."""
+    error = None
+    success = None
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        new_password = request.form.get("new_password", "")
+        confirm = request.form.get("confirm_password", "")
+        if not username or not new_password:
+            error = "All fields are required."
+        elif len(new_password) < 4:
+            error = "Password must be at least 4 characters."
+        elif new_password != confirm:
+            error = "Passwords do not match."
+        else:
+            db = get_db()
+            user = db.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
+            if not user:
+                error = "No account found with that username."
+            else:
+                db.execute(
+                    "UPDATE users SET password_hash = ? WHERE username = ?",
+                    (generate_password_hash(new_password), username),
+                )
+                db.commit()
+                db.close()
+                success = "Password updated. You can now log in with your new password."
+                return render_template("reset_password.html", error=error, success=success)
+            db.close()
+    return render_template("reset_password.html", error=error, success=success)
 
 
 @app.route("/login", methods=["GET", "POST"])
