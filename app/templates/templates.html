@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+{% block title %}Shift Templates{% endblock %}
+{% block content %}
+<h1>Shift Templates</h1>
+<p class="subtitle">Save recurring shift patterns and generate coverage notes in one click.</p>
+
+<h2>Create Template</h2>
+<form method="POST" class="card">
+    <input type="hidden" name="action" value="create_template">
+    <label>Name</label>
+    <input type="text" name="name" placeholder="e.g. Weekday Day Shift" required>
+    <label>Days (comma-separated)</label>
+    <input type="text" name="day_pattern" placeholder="monday, tuesday, wednesday" required>
+    <div style="display: flex; gap: 1rem;">
+        <div style="flex: 1;">
+            <label>Start Time</label>
+            <input type="text" name="start_time" placeholder="7am">
+        </div>
+        <div style="flex: 1;">
+            <label>End Time</label>
+            <input type="text" name="end_time" placeholder="3pm">
+        </div>
+        <div style="flex: 1;">
+            <label>Officers Needed</label>
+            <input type="number" name="required_officers" value="2" min="1">
+        </div>
+    </div>
+    <button type="submit" class="btn" style="margin-top: 1rem;">Save Template</button>
+</form>
+
+<h2>Saved Templates</h2>
+{% if templates %}
+{% for t in templates %}
+<div class="card">
+    <div style="display: flex; justify-content: space-between; align-items: start;">
+        <div>
+            <strong>{{ t.name }}</strong><br>
+            <span class="tag">{{ t.day_pattern }}</span>
+            {% if t.start_time %}<span class="tag">{{ t.start_time }}-{{ t.end_time }}</span>{% endif %}
+            <span class="tag">{{ t.required_officers }} officers</span>
+        </div>
+    </div>
+    <div style="display: flex; gap: 0.5rem; margin-top: 0.75rem;">
+        <form method="POST" style="display: inline;">
+            <input type="hidden" name="action" value="apply_template">
+            <input type="hidden" name="template_id" value="{{ t.id }}">
+            <button type="submit" class="btn btn-sm">Apply (Generate Notes)</button>
+        </form>
+        <form method="POST" style="display: inline;">
+            <input type="hidden" name="action" value="delete_template">
+            <input type="hidden" name="template_id" value="{{ t.id }}">
+            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+        </form>
+    </div>
+</div>
+{% endfor %}
+{% else %}
+<p class="subtitle">No templates yet. Create one above to get started.</p>
+{% endif %}
+{% endblock %}

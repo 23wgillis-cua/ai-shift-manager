@@ -63,6 +63,22 @@
 </div>
 
 <div class="section">
+    <h2>Coverage Gap Heatmap</h2>
+    <p class="subtitle" style="font-size: 0.8rem; margin-bottom: 0.5rem;">Notes by day of week. Darker green = more coverage load. Red number = open notes.</p>
+    <div class="heatmap">
+        {% for day_name, label in [("monday","Mon"),("tuesday","Tue"),("wednesday","Wed"),("thursday","Thu"),("friday","Fri"),("saturday","Sat"),("sunday","Sun")] %}
+        {% set dc = day_counts[day_name] %}
+        {% set level = 0 if dc.total == 0 else (1 if dc.total <= 1 else (2 if dc.total <= 3 else (3 if dc.total <= 5 else 4))) %}
+        <div class="heatmap-cell heatmap-level-{{ level }}">
+            <div class="heatmap-label">{{ label }}</div>
+            <div class="heatmap-count">{{ dc.total }}</div>
+            {% if dc.open > 0 %}<div class="heatmap-open">{{ dc.open }} open</div>{% endif %}
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<div class="section">
     <h2>Callout Reasons</h2>
     {% if reasons %}
     {% set max_reason = reasons.values() | max %}
