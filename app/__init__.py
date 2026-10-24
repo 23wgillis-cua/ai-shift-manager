@@ -24,6 +24,15 @@ app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev-secret-key-change-in-production")
 
 
+@app.before_request
+def redirect_to_https():
+    """Redirect HTTP requests to HTTPS for security. Disabled in testing."""
+    if app.config.get("TESTING"):
+        return None
+    if request.scheme == "http" and not request.headers.get("X-Forwarded-Proto", "") == "https":
+        return redirect(request.url.replace("http://", "https://"), code=301)
+
+
 def log_action(action, detail=""):
     """Write an entry to the audit log."""
     uid = session.get("user_id")
