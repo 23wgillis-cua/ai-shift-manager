@@ -14,3 +14,8 @@ build/
 # AWS
 *.pem
 .aws/
+# SSL cert/key generated for HTTPS (not for source control)
+.ebextensions/https-instance.config
+server.crt
+server.key
+deploy.zip
