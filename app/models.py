@@ -131,47 +131,52 @@ def init_db():
             "WHERE phone IS NULL OR phone = ''"
         )
 
-    # --- Seed demo notes for a fresh DB so judges see a populated app ---
-    if user_count == 0:
-        demo_user_id = db.execute(
-            "SELECT id FROM users WHERE username = 'demo'"
+    # --- Seed demo notes so judges see a populated app ---
+    # Runs on both fresh and existing DBs: only seeds if demo user has no notes
+    demo_user_row = db.execute(
+        "SELECT id FROM users WHERE username = 'demo'"
+    ).fetchone()
+    if demo_user_row:
+        demo_user_id = demo_user_row["id"]
+        note_count = db.execute(
+            "SELECT COUNT(*) FROM notes WHERE user_id = ?", (demo_user_id,)
         ).fetchone()[0]
-        now = datetime.now().strftime("%Y-%m-%d %H:%M")
-        demo_notes = [
-            (demo_user_id, "Mike has a funeral Wednesday and can't come to work",
-             "approved", "Mike Rodriguez", "Mike Rodriguez", "funeral", "wednesday", "medium", now, now),
-            (demo_user_id, "Sarah called out sick with the flu today",
-             "approved", "Sarah Chen", "Sarah Chen", "sick", "today", "high", now, now),
-            (demo_user_id, "Tony has a dentist appointment Friday morning",
-             "open", "Tony Walker", "Tony Walker", "appointment", "friday", "medium", now, None),
-            (demo_user_id, "Priya needs to cover for a family emergency this evening",
-             "open", "Priya Patel", "Priya Patel", "family", "today", "high", now, None),
-            (demo_user_id, "James is on vacation next Tuesday",
-             "open", "James O'Brien", "James O'Brien", "vacation", "tuesday", "low", now, None),
-            (demo_user_id, "Maria has a medical appointment Wednesday afternoon",
-             "approved", "Maria Santos", "Maria Santos", "appointment", "wednesday", "low", now, now),
-        ]
-        db.executemany(
-            "INSERT INTO notes (user_id, body, status, assigned_to, parsed_who, "
-            "parsed_what, parsed_when, parsed_urgency, created_at, approved_at) "
-            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-            demo_notes,
-        )
-        # Seed audit log entries for the demo notes
-        db.executemany(
-            "INSERT INTO audit_log (user_id, action, detail, created_at) VALUES (?, ?, ?, ?)",
-            [
-                (demo_user_id, "note_created", "Mike has a funeral Wednesday...", now),
-                (demo_user_id, "swap_approved", "Note #1 assigned to James O'Brien, email logged (demo account - not sent)", now),
-                (demo_user_id, "note_created", "Sarah called out sick with the flu...", now),
-                (demo_user_id, "swap_approved", "Note #2 assigned to Priya Patel, email logged (demo account - not sent)", now),
-                (demo_user_id, "note_created", "Tony has a dentist appointment...", now),
-                (demo_user_id, "note_created", "Priya needs to cover for a family emergency...", now),
-                (demo_user_id, "note_created", "James is on vacation next Tuesday", now),
-                (demo_user_id, "note_created", "Maria has a medical appointment...", now),
-                (demo_user_id, "swap_approved", "Note #6 assigned to Mike Rodriguez, email logged (demo account - not sent)", now),
-            ],
-        )
+        if note_count == 0:
+            now = datetime.now().strftime("%Y-%m-%d %H:%M")
+            demo_notes = [
+                (demo_user_id, "Mike has a funeral Wednesday and can't come to work",
+                 "approved", "Mike Rodriguez", "Mike Rodriguez", "funeral", "wednesday", "medium", now, now),
+                (demo_user_id, "Sarah called out sick with the flu today",
+                 "approved", "Sarah Chen", "Sarah Chen", "sick", "today", "high", now, now),
+                (demo_user_id, "Tony has a dentist appointment Friday morning",
+                 "open", "Tony Walker", "Tony Walker", "appointment", "friday", "medium", now, None),
+                (demo_user_id, "Priya needs to cover for a family emergency this evening",
+                 "open", "Priya Patel", "Priya Patel", "family", "today", "high", now, None),
+                (demo_user_id, "James is on vacation next Tuesday",
+                 "open", "James O'Brien", "James O'Brien", "vacation", "tuesday", "low", now, None),
+                (demo_user_id, "Maria has a medical appointment Wednesday afternoon",
+                 "approved", "Maria Santos", "Maria Santos", "appointment", "wednesday", "low", now, now),
+            ]
+            db.executemany(
+                "INSERT INTO notes (user_id, body, status, assigned_to, parsed_who, "
+                "parsed_what, parsed_when, parsed_urgency, created_at, approved_at) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+                demo_notes,
+            )
+            db.executemany(
+                "INSERT INTO audit_log (user_id, action, detail, created_at) VALUES (?, ?, ?, ?)",
+                [
+                    (demo_user_id, "note_created", "Mike has a funeral Wednesday...", now),
+                    (demo_user_id, "swap_approved", "Note #1 assigned to James O'Brien, email logged (demo account - not sent)", now),
+                    (demo_user_id, "note_created", "Sarah called out sick with the flu...", now),
+                    (demo_user_id, "swap_approved", "Note #2 assigned to Priya Patel, email logged (demo account - not sent)", now),
+                    (demo_user_id, "note_created", "Tony has a dentist appointment...", now),
+                    (demo_user_id, "note_created", "Priya needs to cover for a family emergency...", now),
+                    (demo_user_id, "note_created", "James is on vacation next Tuesday", now),
+                    (demo_user_id, "note_created", "Maria has a medical appointment...", now),
+                    (demo_user_id, "swap_approved", "Note #6 assigned to Mike Rodriguez, email logged (demo account - not sent)", now),
+                ],
+            )
 
     db.commit()
     db.close()
