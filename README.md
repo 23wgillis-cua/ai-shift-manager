@@ -69,7 +69,7 @@ Flask App (gunicorn, port 8000)
 | --- | --- | --- |
 | Problem Definition & Relevance | 10 | Real pain point for 24/7 security operations supervisors. Built from firsthand police and security experience managing shift coverage. |
 | AI Feature Innovation & Integration | 20 | Two-stage AI pipeline: (1) AWS Bedrock LLM (Llama 3) parses plain-English notes into structured JSON (who, what, when, urgency) with regex fallback, (2) same LLM reasons through coverage recommendations by weighing availability, workload distribution, and role fit, returning ranked candidates with 1-10 scores and natural-language reasoning. |
-| Technical Execution & Code Quality | 20 | Flask app with SQLite database, session-based auth, AWS SES email integration, AWS Bedrock LLM integration, pytest test suite (12 tests), GitHub Actions CI pipeline. Shared base template with Jinja inheritance. Separate modules for note parsing, LLM integration, and route handling. |
+| Technical Execution & Code Quality | 20 | Flask app with SQLite database, session-based auth, AWS SES email integration, AWS Bedrock LLM integration, pytest test suite (28 tests), GitHub Actions CI pipeline. Shared base template with Jinja inheritance. Separate modules for note parsing, LLM integration, and route handling. |
 | User Experience & Design | 10 | Dark-themed responsive UI with shared sticky nav bar, smooth hover transitions, auto-dismissing notifications, mobile media queries. Pages: Notes (with AI recommendation cards), Calendar (month grid with color-coded notes), Team (add/remove employees, set availability), Dashboard (stat cards + bar charts), Audit Log. |
 | Business Impact & Scalability | 10 | Replaces hours of manual schedule juggling per week. Availability-aware coverage filtering excludes unavailable employees automatically. CSV export for reporting up the chain. Audit log for compliance. SQLite prototype with PostgreSQL production path. AWS Free Tier deployment. |
 | GitHub Transparency | 10 | 41+ commits showing iterative build from skeleton to full-featured app. CI badge in README. Clean commit messages documenting each feature addition. Conventional commit format. |
@@ -83,6 +83,26 @@ Flask App (gunicorn, port 8000)
 | https://ai-shift-manager.us-east-1.elasticbeanstalk.com | Username: `demo` / Password: `demo` |
 
 Log in with the demo account and try the full flow: type a shift note, see the AI parse it into who/what/when/urgency, get a coverage recommendation from the LLM, and approve a swap. The demo account logs email notifications instead of sending real email; the admin account (separate password, not in this repo) sends real SES emails.
+
+## Demo Walkthrough (5 minutes)
+
+1. **Log in** at https://ai-shift-manager.us-east-1.elasticbeanstalk.com with username `demo` and password `demo`.
+
+2. **Notes page** - You will see 6 pre-loaded shift notes. Some are approved (green left border), some are open (blue left border). Each note shows the AI-parsed fields: who, reason, when, urgency.
+
+3. **Type a new note** - In the "What happened?" box, type something like: `Sarah has a family emergency Friday and needs coverage`. Click Save Note. The AI will parse it into who/what/when/urgency automatically.
+
+4. **AI Recommendation** - Scroll to the new open note. If the AI recommendation is available, you will see a blue "AI Recommendation" card with a suggested employee, reasoning, and ranked candidates with 1-10 scores.
+
+5. **Approve a swap** - Click the dropdown next to an open note, select an employee, and click Approve Swap. The note turns green and shows "Assigned to."
+
+6. **Calendar** - Click Calendar in the nav bar. See notes placed on the calendar grid by day of week, color-coded open (green) vs approved (blue).
+
+7. **Dashboard** - Click Dashboard. See stat cards (total/open/approved/employees), a day-of-week heatmap, callout reason breakdown, and coverage assignment bar charts. Click "Export notes as CSV" to download all notes.
+
+8. **Team** - Click Team to add or remove employees, set unavailable days, and assign roles.
+
+9. **Audit Log** - Click Audit Log to see every action logged with timestamps.
 
 ## License
 

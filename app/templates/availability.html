@@ -8,26 +8,23 @@
         padding: 1rem 1.25rem;
         border-radius: 8px;
         margin-bottom: 0.75rem;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        gap: 1rem;
         transition: box-shadow 0.15s ease;
     }
     .emp-row:hover { box-shadow: 0 2px 12px rgba(0,0,0,0.2); }
+    .emp-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; }
     .emp-name { font-size: 0.95rem; color: #c8d0d8; }
     .emp-role { font-size: 0.75rem; color: #555; }
-    .emp-row label { font-size: 0.8rem; color: #8899aa; }
-    .emp-row input { width: 200px; }
+    .emp-days { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.5rem; }
+    .day-check { display: flex; align-items: center; gap: 0.25rem; font-size: 0.75rem; color: #8899aa; }
+    .day-check input { width: auto; }
     .add-form { margin-bottom: 1.5rem; }
     .add-form-row { display: flex; gap: 0.5rem; flex-wrap: wrap; }
     .add-form-row input { flex: 1; min-width: 120px; }
     .delete-form { display: inline; }
     @media (max-width: 600px) {
-        .emp-row { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
-        .emp-row input { width: 100%; }
         .add-form-row { flex-direction: column; }
         .add-form-row input { width: 100%; }
+        .emp-header { flex-direction: column; gap: 0.5rem; align-items: flex-start; }
     }
 {% endblock %}
 
@@ -54,18 +51,28 @@
     <input type="hidden" name="action" value="save_availability">
     {% for emp in employees %}
     <div class="emp-row">
-        <div>
-            <span class="emp-name">{{ emp.name }}</span>
-            <span class="emp-role">({{ emp.role }}{% if emp.email %}, {{ emp.email }}{% endif %})</span>
-        </div>
-        <div style="display: flex; align-items: center; gap: 0.75rem;">
-            <label>Unavailable:</label>
-            <input type="text" name="days_{{ emp.id }}" value="{{ emp.unavailable_days or '' }}" placeholder="monday, friday">
+        <div class="emp-header">
+            <div>
+                <span class="emp-name">{{ emp.name }}</span>
+                <span class="emp-role">({{ emp.role }}{% if emp.email %}, {{ emp.email }}{% endif %})</span>
+            </div>
             <form method="POST" action="/availability" class="delete-form" onsubmit="return confirm('Remove {{ emp.name }}?')">
                 <input type="hidden" name="action" value="delete_employee">
                 <input type="hidden" name="emp_id" value="{{ emp.id }}">
                 <button type="submit" class="btn btn-danger">Remove</button>
             </form>
+        </div>
+        <label style="font-size: 0.8rem; color: #8899aa; margin-bottom: 0.4rem; display: block;">Unavailable days:</label>
+        <div class="emp-days">
+            {% set unavail = (emp.unavailable_days or '')|lower %}
+            {% for day in ['monday','tuesday','wednesday','thursday','friday','saturday','sunday'] %}
+            <label class="day-check">
+                <input type="checkbox" name="days_{{ emp.id }}" value="{{ day }}"
+                    {% if day in unavail %}checked{% endif %}
+                    onchange="this.value = this.checked ? '{{ day }}' : ''">
+                {{ day|capitalize }}
+            </label>
+            {% endfor %}
         </div>
     </div>
     {% endfor %}

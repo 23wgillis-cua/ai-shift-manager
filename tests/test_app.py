@@ -84,9 +84,14 @@ def test_add_note(client):
 
 def test_empty_note_not_saved(client):
     login(client)
+    # Count notes before empty submission
+    rv = client.get("/")
+    before_count = rv.data.count(b"note-item")
     client.post("/add-note", data={"body": ""}, follow_redirects=True)
     rv = client.get("/")
-    assert b"No notes yet" in rv.data or b"note-item" not in rv.data
+    after_count = rv.data.count(b"note-item")
+    # Empty note should not increase the count
+    assert after_count == before_count
 
 
 def test_approve_swap(client):

@@ -45,10 +45,10 @@
 {% endif %}
 
 <div class="card note-form">
-    <form method="POST" action="/add-note">
+    <form method="POST" action="/add-note" id="note-form">
         <label for="body">What happened?</label>
         <textarea id="body" name="body" placeholder="e.g. Mike has a funeral Wednesday and can't come to work" required autofocus></textarea>
-        <button type="submit" class="btn" style="margin-top: 0.75rem;">Save Note</button>
+        <button type="submit" class="btn" id="submit-btn" style="margin-top: 0.75rem;">Save Note</button>
     </form>
 </div>
 
@@ -86,6 +86,11 @@
                 </div>
                 {% endif %}
             </div>
+            {% else %}
+            <div class="ai-rec">
+                <div class="ai-rec-badge">AI Recommendation</div>
+                <p class="ai-rec-reason">AI recommendation temporarily unavailable. All available employees are listed below for manual selection.</p>
+            </div>
             {% endif %}
             <form method="POST" action="/approve/{{ note.id }}">
                 <label>Assign coverage to:</label>
@@ -120,5 +125,12 @@
         var el = document.getElementById('auto-dismiss');
         if (el) { el.style.opacity = '0'; el.style.transition = 'opacity 0.5s'; setTimeout(function(){el.style.display='none';}, 500); }
     }, 4000);
+    var form = document.getElementById('note-form');
+    if (form) {
+        form.addEventListener('submit', function() {
+            var btn = document.getElementById('submit-btn');
+            if (btn) { btn.textContent = 'Parsing with AI...'; btn.disabled = true; }
+        });
+    }
 </script>
 {% endblock %}

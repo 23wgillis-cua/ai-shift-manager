@@ -207,7 +207,7 @@ def availability():
         action = request.form.get("action", "")
         if action == "save_availability":
             for emp in db.execute("SELECT * FROM employees").fetchall():
-                days = request.form.get(f"days_{emp['id']}", "").strip().lower()
+                days = ", ".join(request.form.getlist(f"days_{emp['id']}")).strip().lower()
                 db.execute(
                     "UPDATE employees SET unavailable_days = ? WHERE id = ?",
                     (days, emp["id"]),
