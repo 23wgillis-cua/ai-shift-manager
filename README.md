@@ -41,23 +41,26 @@ Shift supervisors and managers in security, healthcare, facilities, and other 24
 ## Architecture
 
 ```
-Browser
+Browser (HTTPS)
   |
   v
-nginx (port 80)
+nginx (port 443 SSL -> port 80 -> port 8000)
   |
   v
 Flask App (gunicorn, port 8000)
   |
   +-- SQLite (shiftmanager.db)
-  |     users, notes, employees, audit_log
+  |     users, notes, employees, audit_log, shift_templates
   |
   +-- AWS Bedrock (Llama 3 8B)
   |     note parsing -> who/what/when/urgency
   |     coverage recommendation -> ranked candidates + reasoning
   |
   +-- AWS SES
-        swap approval -> email to assigned employee
+  |     swap approval -> email to assigned employee
+  |
+  +-- AWS SNS
+        swap approval -> SMS to assigned employee
 ```
 
 ## Rubric Alignment
@@ -69,7 +72,7 @@ Flask App (gunicorn, port 8000)
 | Technical Execution & Code Quality | 20 | Flask app with SQLite database, session-based auth, AWS SES email integration, AWS Bedrock LLM integration, pytest test suite (12 tests), GitHub Actions CI pipeline. Shared base template with Jinja inheritance. Separate modules for note parsing, LLM integration, and route handling. |
 | User Experience & Design | 10 | Dark-themed responsive UI with shared sticky nav bar, smooth hover transitions, auto-dismissing notifications, mobile media queries. Pages: Notes (with AI recommendation cards), Calendar (month grid with color-coded notes), Team (add/remove employees, set availability), Dashboard (stat cards + bar charts), Audit Log. |
 | Business Impact & Scalability | 10 | Replaces hours of manual schedule juggling per week. Availability-aware coverage filtering excludes unavailable employees automatically. CSV export for reporting up the chain. Audit log for compliance. SQLite prototype with PostgreSQL production path. AWS Free Tier deployment. |
-| GitHub Transparency | 10 | 31+ commits showing iterative build from skeleton to full-featured app. CI badge in README. Clean commit messages documenting each feature addition. Conventional commit format. |
+| GitHub Transparency | 10 | 41+ commits showing iterative build from skeleton to full-featured app. CI badge in README. Clean commit messages documenting each feature addition. Conventional commit format. |
 | Documentation & Communication | 10 | This README with problem statement, solution, tech stack, rubric alignment, and demo credentials. THESIS.md with project rationale. Live app link and tech stack at the top of the README. |
 | Deployment & Live Demo | 10 | Live at https://ai-shift-manager.us-east-1.elasticbeanstalk.com on AWS Elastic Beanstalk (t3.micro, Free Tier). HTTPS enabled with SSL on port 443. Working login (demo/demo). Full swap flow: note input, AI parsing, coverage recommendation, approval, email notification. Calendar, dashboard, audit log, and CSV export all functional. |
 
@@ -80,6 +83,10 @@ Flask App (gunicorn, port 8000)
 | https://ai-shift-manager.us-east-1.elasticbeanstalk.com | Username: `demo` / Password: `demo` |
 
 Log in with the demo account and try the full flow: type a shift note, see the AI parse it into who/what/when/urgency, get a coverage recommendation from the LLM, and approve a swap. The demo account logs email notifications instead of sending real email; the admin account (separate password, not in this repo) sends real SES emails.
+
+## License
+
+MIT License. See [LICENSE](LICENSE) for details.
 
 ## Status
 

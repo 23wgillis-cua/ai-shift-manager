@@ -2,21 +2,25 @@ import pytest
 import os
 import tempfile
 import app as app_module
+import app.models as models_module
 import app.llm_parser as llm_module
 from app import app, init_db, get_db
 
 
 @pytest.fixture
 def client():
-    import importlib
     db_fd, db_path = tempfile.mkstemp(suffix=".db")
     app_module.DB_PATH = db_path
-    app_module.ses_client = None
-    app_module.sns_client = None
+    models_module.DB_PATH = db_path
+    # Disable external services for tests
+    from app import notifications as notif
+    notif.ses_client = None
+    notif.sns_client = None
     app_module.BEDROCK_ENABLED = False
     llm_module.BEDROCK_ENABLED = False
     os.environ["SES_ENABLED"] = "0"
     os.environ["BEDROCK_ENABLED"] = "0"
+    os.environ["SNS_ENABLED"] = "0"
 
     app.config["TESTING"] = True
     app.config["SECRET_KEY"] = "test-secret"
@@ -26,6 +30,7 @@ def client():
         yield client
 
     app_module.DB_PATH = "shiftmanager.db"
+    models_module.DB_PATH = "shiftmanager.db"
     os.close(db_fd)
     os.unlink(db_path)
 
@@ -33,6 +38,8 @@ def client():
 def login(client, username="demo", password="demo"):
     return client.post("/login", data={"username": username, "password": password}, follow_redirects=True)
 
+
+# --- Login / auth tests ---
 
 def test_login_page_loads(client):
     rv = client.get("/login")
@@ -65,6 +72,8 @@ def test_logout_clears_session(client):
     assert rv.status_code == 200
     assert b"Sign In" in rv.data
 
+
+# --- Note CRUD tests ---
 
 def test_add_note(client):
     login(client)
@@ -122,6 +131,8 @@ def test_cannot_add_note_without_login(client):
     assert b"Sign In" in rv.data
 
 
+# --- Dashboard tests ---
+
 def test_dashboard_has_heatmap(client):
     login(client)
     client.post("/add-note", data={"body": "Mike is out Friday"}, follow_redirects=True)
@@ -129,6 +140,46 @@ def test_dashboard_has_heatmap(client):
     assert rv.status_code == 200
     assert b"heatmap" in rv.data
 
+
+def test_dashboard_shows_counts(client):
+    login(client)
+    client.post("/add-note", data={"body": "Mike is out sick today"}, follow_redirects=True)
+    client.post("/add-note", data={"body": "Sarah has a funeral Wednesday"}, follow_redirects=True)
+    rv = client.get("/dashboard")
+    assert rv.status_code == 200
+    assert b"total" in rv.data or b"Total" in rv.data
+
+
+# --- Calendar tests ---
+
+def test_calendar_page_loads(client):
+    login(client)
+    rv = client.get("/calendar")
+    assert rv.status_code == 200
+    assert b"calendar" in rv.data or b"Calendar" in rv.data
+
+
+def test_calendar_shows_notes_on_correct_day(client):
+    login(client)
+    client.post("/add-note", data={"body": "Mike is out Friday"}, follow_redirects=True)
+    rv = client.get("/calendar")
+    assert rv.status_code == 200
+    assert b"Mike is out Friday" in rv.data or b"note" in rv.data
+
+
+# --- CSV export test ---
+
+def test_csv_export(client):
+    login(client)
+    client.post("/add-note", data={"body": "Mike is out sick today"}, follow_redirects=True)
+    rv = client.get("/export/csv")
+    assert rv.status_code == 200
+    assert b"text/csv" in rv.content_type.encode()
+    assert b"ID" in rv.data
+    assert b"Mike is out sick today" in rv.data
+
+
+# --- Templates tests ---
 
 def test_templates_page_loads(client):
     login(client)
@@ -149,10 +200,22 @@ def test_create_and_apply_template(client):
     }, follow_redirects=True)
     assert rv.status_code == 200
     assert b"Weekday Day" in rv.data
-    # Apply it
     rv = client.post("/templates", data={"action": "apply_template", "template_id": "1"}, follow_redirects=True)
     assert rv.status_code == 200
 
+
+# --- Audit log test ---
+
+def test_audit_log_page_loads(client):
+    login(client)
+    client.post("/add-note", data={"body": "Test audit note"}, follow_redirects=True)
+    rv = client.get("/audit")
+    assert rv.status_code == 200
+    assert b"audit" in rv.data or b"Audit" in rv.data
+    assert b"note_created" in rv.data
+
+
+# --- Password reset tests ---
 
 def test_password_reset_page_loads(client):
     rv = client.get("/reset-password")
@@ -168,14 +231,39 @@ def test_password_reset_changes_password(client):
     }, follow_redirects=True)
     assert rv.status_code == 200
     assert b"Password updated" in rv.data
-    # Old password should fail
     rv = client.post("/login", data={"username": "demo", "password": "demo"}, follow_redirects=True)
     assert b"Invalid username or password" in rv.data
-    # New password should work
     rv = client.post("/login", data={"username": "demo", "password": "newpass"}, follow_redirects=True)
     assert rv.status_code == 200
     assert b"Shift Notes" in rv.data
 
+
+# --- Registration test ---
+
+def test_register_new_user(client):
+    rv = client.post("/register", data={
+        "username": "newuser",
+        "password": "test1234",
+        "display_name": "New User",
+        "email": "new@example.com",
+    }, follow_redirects=True)
+    assert rv.status_code == 200
+    assert b"Sign In" in rv.data
+    rv = client.post("/login", data={"username": "newuser", "password": "test1234"}, follow_redirects=True)
+    assert rv.status_code == 200
+    assert b"Shift Notes" in rv.data
+
+
+def test_register_duplicate_username_fails(client):
+    rv = client.post("/register", data={
+        "username": "demo",
+        "password": "test1234",
+        "display_name": "Duplicate",
+    }, follow_redirects=True)
+    assert b"taken" in rv.data or b"Sign In" not in rv.data
+
+
+# --- API tests ---
 
 def test_conflict_check_api(client):
     login(client)
@@ -195,9 +283,15 @@ def test_llm_summary_api(client):
     assert "open" in data["summary"]
 
 
+# --- Notification tests ---
+
 def test_sms_disabled_in_test(client):
-    # SNS should be disabled in tests since we don't set SNS_ENABLED
-    from app import send_swap_sms
+    from app.notifications import send_swap_sms
     result = send_swap_sms("Test", "+15555555555", "test note")
-    # Should return False since sns_client is None
+    assert result is False
+
+
+def test_email_disabled_in_test(client):
+    from app.notifications import send_swap_notification
+    result = send_swap_notification("Test", "test@example.com", "note", "Manager")
     assert result is False

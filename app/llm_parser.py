@@ -1,8 +1,8 @@
+"""LLM-powered note parsing and coverage recommendation via AWS Bedrock."""
 import json
 import os
 import boto3
 from botocore.exceptions import ClientError
-
 
 BEDROCK_MODEL_ID = os.environ.get("BEDROCK_MODEL_ID", "meta.llama3-8b-instruct-v1:0")
 BEDROCK_ENABLED = os.environ.get("BEDROCK_ENABLED", "1") != "0"
@@ -15,6 +15,45 @@ def get_bedrock_client():
     if _bedrock_client is None and BEDROCK_ENABLED:
         _bedrock_client = boto3.client("bedrock-runtime", region_name="us-east-1")
     return _bedrock_client
+
+
+def _extract_json(text):
+    """Extract the first complete JSON object from a text string.
+
+    Handles nested braces and string-escaped braces. Returns the parsed
+    dict or None if no valid JSON object is found.
+    """
+    start = text.find("{")
+    if start == -1:
+        return None
+    depth = 0
+    end = -1
+    in_string = False
+    escape = False
+    for i in range(start, len(text)):
+        ch = text[i]
+        if escape:
+            escape = False
+            continue
+        if ch == "\\":
+            escape = True
+            continue
+        if ch == '"':
+            in_string = not in_string
+        if not in_string:
+            if ch == "{":
+                depth += 1
+            elif ch == "}":
+                depth -= 1
+                if depth == 0:
+                    end = i + 1
+                    break
+    if end == -1:
+        return None
+    try:
+        return json.loads(text[start:end])
+    except json.JSONDecodeError:
+        return None
 
 
 def parse_note_with_llm(body, employee_names=None):
@@ -50,46 +89,14 @@ Do not include any other text."""
 
         resp = client.invoke_model(
             modelId=BEDROCK_MODEL_ID,
-            body=json.dumps({
-                "prompt": prompt,
-                "max_gen_len": 200,
-            })
+            body=json.dumps({"prompt": prompt, "max_gen_len": 200}),
         )
         result = json.loads(resp["body"].read())
         text = result.get("generation", "").strip()
 
-        # Extract the first complete JSON object from the response
-        start = text.find("{")
-        if start == -1:
+        parsed = _extract_json(text)
+        if parsed is None:
             return None
-        # Find the matching closing brace
-        depth = 0
-        end = -1
-        in_string = False
-        escape = False
-        for i in range(start, len(text)):
-            ch = text[i]
-            if escape:
-                escape = False
-                continue
-            if ch == "\\":
-                escape = True
-                continue
-            if ch == '"' and not escape:
-                in_string = not in_string
-            if not in_string:
-                if ch == "{":
-                    depth += 1
-                elif ch == "}":
-                    depth -= 1
-                    if depth == 0:
-                        end = i + 1
-                        break
-        if end == -1:
-            return None
-
-        json_str = text[start:end]
-        parsed = json.loads(json_str)
         return {
             "who": parsed.get("who") or None,
             "what": parsed.get("what", "other"),
@@ -117,15 +124,16 @@ def recommend_coverage(note_body, parsed_who, parsed_when, employees, recent_ass
     if not BEDROCK_ENABLED:
         return None
 
-    # Build employee summary for the prompt
     emp_lines = []
     for emp in employees:
         if parsed_who and emp["name"] == parsed_who:
-            continue  # skip the person who is out
+            continue
         unavail = emp.get("unavailable_days", "") or ""
         load = recent_assignments.get(emp["name"], 0)
-        emp_lines.append(f"- {emp['name']} (role: {emp['role']}, unavailable: {unavail or 'none'}, recent assignments: {load})")
-
+        emp_lines.append(
+            f"- {emp['name']} (role: {emp['role']}, "
+            f"unavailable: {unavail or 'none'}, recent assignments: {load})"
+        )
     emp_summary = "\n".join(emp_lines) if emp_lines else "No available employees"
 
     prompt = f"""You are a shift scheduling assistant. A supervisor needs someone to cover a shift.
@@ -155,45 +163,14 @@ Scores should be 1-10 based on suitability. Do not include any other text."""
 
         resp = client.invoke_model(
             modelId=BEDROCK_MODEL_ID,
-            body=json.dumps({
-                "prompt": prompt,
-                "max_gen_len": 400,
-            })
+            body=json.dumps({"prompt": prompt, "max_gen_len": 400}),
         )
         result = json.loads(resp["body"].read())
         text = result.get("generation", "").strip()
 
-        # Extract the first complete JSON object
-        start = text.find("{")
-        if start == -1:
+        parsed = _extract_json(text)
+        if parsed is None:
             return None
-        depth = 0
-        end = -1
-        in_string = False
-        escape = False
-        for i in range(start, len(text)):
-            ch = text[i]
-            if escape:
-                escape = False
-                continue
-            if ch == "\\":
-                escape = True
-                continue
-            if ch == '"':
-                in_string = not in_string
-            if not in_string:
-                if ch == "{":
-                    depth += 1
-                elif ch == "}":
-                    depth -= 1
-                    if depth == 0:
-                        end = i + 1
-                        break
-        if end == -1:
-            return None
-
-        json_str = text[start:end]
-        parsed = json.loads(json_str)
         return {
             "recommended": parsed.get("recommended"),
             "reasoning": parsed.get("reasoning", ""),
