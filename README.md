@@ -2,7 +2,7 @@
 
 ![CI](https://github.com/23wgillis-cua/ai-shift-manager/actions/workflows/ci.yml/badge.svg)
 
-**Live app:** https://ai-shift-manager.us-east-1.elasticbeanstalk.com
+**Live app:** https://aishiftmanager.duckdns.org
 
 **Tech stack:** Python (Flask), SQLite, AWS SES, AWS Elastic Beanstalk, GitHub
 
@@ -74,19 +74,19 @@ Flask App (gunicorn, port 8000)
 | Business Impact & Scalability | 10 | Replaces hours of manual schedule juggling per week. Availability-aware coverage filtering excludes unavailable employees automatically. CSV export for reporting up the chain. Audit log for compliance. SQLite prototype with PostgreSQL production path. AWS Free Tier deployment. |
 | GitHub Transparency | 10 | 41+ commits showing iterative build from skeleton to full-featured app. CI badge in README. Clean commit messages documenting each feature addition. Conventional commit format. |
 | Documentation & Communication | 10 | This README with problem statement, solution, tech stack, rubric alignment, and demo credentials. THESIS.md with project rationale. Live app link and tech stack at the top of the README. |
-| Deployment & Live Demo | 10 | Live at https://ai-shift-manager.us-east-1.elasticbeanstalk.com on AWS Elastic Beanstalk (t3.micro, Free Tier). HTTPS enabled with SSL on port 443. Working login (demo/demo). Full swap flow: note input, AI parsing, coverage recommendation, approval, email notification. Calendar, dashboard, audit log, and CSV export all functional. |
+| Deployment & Live Demo | 10 | Live at https://aishiftmanager.duckdns.org on AWS Elastic Beanstalk (t3.micro, Free Tier). HTTPS enabled on port 443 with a trusted Let's Encrypt certificate (DuckDNS domain), no browser warnings. Working login (demo/demo). Full swap flow: note input, AI parsing, coverage recommendation, approval, email notification. Calendar, dashboard, audit log, and CSV export all functional. |
 
 ## Demo Credentials
 
 | URL | Credentials |
 | --- | --- |
-| https://ai-shift-manager.us-east-1.elasticbeanstalk.com | Username: `demo` / Password: `demo` |
+| https://aishiftmanager.duckdns.org | Username: `demo` / Password: `demo` |
 
 Log in with the demo account and try the full flow: type a shift note, see the AI parse it into who/what/when/urgency, get a coverage recommendation from the LLM, and approve a swap. The demo account logs email notifications instead of sending real email; the admin account (separate password, not in this repo) sends real SES emails.
 
 ## Demo Walkthrough (5 minutes)
 
-1. **Log in** at https://ai-shift-manager.us-east-1.elasticbeanstalk.com with username `demo` and password `demo`.
+1. **Log in** at https://aishiftmanager.duckdns.org with username `demo` and password `demo`.
 
 2. **Notes page** - You will see 6 pre-loaded shift notes. Some are approved (green left border), some are open (blue left border). Each note shows the AI-parsed fields: who, reason, when, urgency.
 

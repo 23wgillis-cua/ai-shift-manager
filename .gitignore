@@ -19,3 +19,6 @@ build/
 server.crt
 server.key
 deploy.zip
+
+# Deploy bundle (contains embedded TLS private key, never commit)
+deploy.zip
