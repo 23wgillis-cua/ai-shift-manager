@@ -79,6 +79,25 @@ def send_coverage_offer(name, email, note_body, accept_url, decline_url):
         return False
 
 
+def send_coverage_offer_sms(name, phone, note_body, accept_url, decline_url):
+    """Send a coverage offer SMS via SNS with short Accept / Decline links.
+
+    Returns True on success, False on failure or if phone is missing.
+    """
+    if not sns_client or not phone:
+        return False
+    message = (
+        f"Hi {name}, a shift needs coverage and you're the best fit. "
+        f'"{note_body[:80]}". Accept: {accept_url} | Decline: {decline_url} '
+        f"- AI Shift Manager"
+    )
+    try:
+        sns_client.publish(PhoneNumber=phone, Message=message)
+        return True
+    except ClientError:
+        return False
+
+
 def send_swap_sms(assigned_name, assigned_phone, note_body):
     """Send an SMS notification via SNS when a swap is approved.
 

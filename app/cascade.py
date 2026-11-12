@@ -10,7 +10,7 @@ import secrets
 from datetime import datetime
 
 from app.models import get_db
-from app.notifications import send_coverage_offer
+from app.notifications import send_coverage_offer, send_coverage_offer_sms
 from app.llm_parser import recommend_coverage
 
 APP_BASE_URL = os.environ.get("APP_BASE_URL", "https://aishiftmanager.duckdns.org")
@@ -139,8 +139,12 @@ def _send_offer_to(db, note, emp, user_id, demo=False):
         sent = send_coverage_offer(
             emp["name"], emp["email"], note["body"], accept_url, decline_url
         )
+        sms_sent = send_coverage_offer_sms(
+            emp["name"], emp["phone"], note["body"], accept_url, decline_url
+        )
         detail = (
-            f"Coverage offer #{note['id']} sent to {emp['name']}, email: {sent}"
+            f"Coverage offer #{note['id']} sent to {emp['name']}, "
+            f"email: {sent}, sms: {sms_sent}"
         )
     db.execute(
         "INSERT INTO audit_log (user_id, action, detail, created_at) "
@@ -196,6 +200,32 @@ def respond_to_offer(token, action):
         }
 
     if action == "accept":
+        # Conflict check: is this employee already approved for another
+        # shift on the same day?
+        conflict = _find_conflict(db, note, offer["employee_name"])
+        if conflict:
+            db.execute(
+                "UPDATE coverage_offers SET status = 'cancelled', responded_at = ? "
+                "WHERE id = ?",
+                (_now(), offer["id"]),
+            )
+            demo = _note_owner_is_demo(db, note["user_id"])
+            next_name = _advance(db, note, offer["employee_name"], note["user_id"], demo)
+            db.execute(
+                "INSERT INTO audit_log (user_id, action, detail, created_at) "
+                "VALUES (?, 'offer_conflict', ?, ?)",
+                (note["user_id"],
+                 f"Note #{note['id']}: {offer['employee_name']} accept blocked - "
+                 f"conflict with '{conflict}'",
+                 _now()),
+            )
+            db.commit()
+            db.close()
+            return {
+                "ok": True, "action": "conflict", "employee": offer["employee_name"],
+                "note_body": note["body"], "conflict": conflict, "next": next_name,
+            }
+
         if note["status"] != "open":
             # Someone else accepted first.
             db.execute(
@@ -272,6 +302,23 @@ def respond_to_offer(token, action):
 
     db.close()
     return {"ok": False, "reason": "bad_action"}
+
+
+def _find_conflict(db, note, employee_name):
+    """Return the conflicting note body if this employee is already
+    approved to cover another shift on the same day, else None."""
+    when = (note["parsed_when"] or "").lower()
+    if not when or when == "unspecified":
+        return None
+    existing = db.execute(
+        "SELECT * FROM notes WHERE assigned_to = ? AND status = 'approved' "
+        "AND parsed_when = ?",
+        (employee_name, note["parsed_when"]),
+    ).fetchall()
+    for n in existing:
+        if n["id"] != note["id"] and (n["body"] or "").strip():
+            return n["body"]
+    return existing and existing[0]["body"] or None
 
 
 def _note_owner_is_demo(db, user_id):

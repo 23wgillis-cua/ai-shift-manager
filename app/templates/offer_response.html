@@ -68,6 +68,12 @@
             <p>You're confirmed to cover this shift. Your supervisor has been
                notified and the schedule has been updated.</p>
             <div class="note-body">"{{ result.note_body }}"</div>
+        {% elif result.action == 'conflict' %}
+            <div class="icon">&#9888;&#65039;</div>
+            <h1>Can't take this one</h1>
+            <p>You're already covering another shift that day:</p>
+            <div class="note-body">"{{ result.conflict }}"</div>
+            <p>The offer has been passed to the next available candidate. Thanks for responding!</p>
         {% elif result.action == 'declined' %}
             <div class="icon">&#128078;</div>
             <h1>Got it, thanks for the quick response</h1>

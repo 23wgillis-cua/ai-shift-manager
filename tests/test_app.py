@@ -411,3 +411,79 @@ def test_login_page_has_hero(client):
     rv = client.get("/login")
     assert rv.status_code == 200
     assert b"Never chase shift coverage again" in rv.data
+
+
+# --- SMS cascade + conflict detection tests ---
+
+def test_offer_sms_disabled_in_test(client):
+    from app.notifications import send_coverage_offer_sms
+    result = send_coverage_offer_sms("Test", "+15550005555", "note", "http://a", "http://d")
+    assert result is False
+
+
+def test_conflict_blocks_accept_and_advances(client):
+    login(client)
+    db = models_module.get_db()
+    # Find an open note; give its top candidate a same-day approved shift.
+    note = db.execute(
+        "SELECT * FROM notes WHERE status='open' AND user_id = "
+        "(SELECT id FROM users WHERE username='demo') ORDER BY id LIMIT 1"
+    ).fetchone()
+    db.close()
+
+    # Start cascade, capture the first offer
+    client.post(f"/start-cascade/{note['id']}", follow_redirects=True)
+    db = models_module.get_db()
+    offer = db.execute(
+        "SELECT * FROM coverage_offers WHERE note_id = ? ORDER BY id LIMIT 1", (note["id"],)
+    ).fetchone()
+    db.close()
+    assert offer["status"] == "pending"
+    first_name = offer["employee_name"]
+
+    # Give that employee an approved assignment on the same day
+    db = models_module.get_db()
+    db.execute(
+        "INSERT INTO notes (user_id, body, status, assigned_to, parsed_who, "
+        "parsed_what, parsed_when, parsed_urgency, created_at) "
+        "VALUES (?, 'Pre-existing approved shift', 'approved', ?, '', 'other', ?, 'low', ?)",
+        (note["user_id"], first_name, note["parsed_when"], "2026-11-01 08:00"),
+    )
+    db.commit()
+    db.close()
+
+    rv = client.get(f"/offer/{offer['token']}/accept")
+    assert rv.status_code == 200
+    assert b"already covering another shift" in rv.data
+
+    db = models_module.get_db()
+    note_after = db.execute("SELECT * FROM notes WHERE id = ?", (note["id"],)).fetchone()
+    offers = db.execute(
+        "SELECT * FROM coverage_offers WHERE note_id = ? ORDER BY id", (note["id"],)
+    ).fetchall()
+    db.close()
+    # Note stays open, conflicted offer cancelled, next candidate offered
+    assert note_after["status"] == "open"
+    statuses = {o["employee_name"]: o["status"] for o in offers}
+    assert statuses[first_name] == "cancelled"
+    pending = [o for o in offers if o["status"] == "pending"]
+    assert len(pending) == 1
+    assert pending[0]["employee_name"] != first_name
+
+
+def test_accept_with_no_conflict_succeeds(client):
+    login(client)
+    db = models_module.get_db()
+    note = db.execute(
+        "SELECT * FROM notes WHERE status='open' AND user_id = "
+        "(SELECT id FROM users WHERE username='demo') ORDER BY id LIMIT 1"
+    ).fetchone()
+    db.close()
+    client.post(f"/start-cascade/{note['id']}", follow_redirects=True)
+    db = models_module.get_db()
+    offer = db.execute(
+        "SELECT * FROM coverage_offers WHERE note_id = ? ORDER BY id LIMIT 1", (note["id"],)
+    ).fetchone()
+    db.close()
+    rv = client.get(f"/offer/{offer['token']}/accept")
+    assert b"confirmed to cover" in rv.data
