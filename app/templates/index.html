@@ -67,7 +67,7 @@
 <h2>Recent Notes</h2>
 {% if notes %}
     {% for note in notes %}
-    <div class="note-item{% if note.status == 'approved' %} approved{% endif %}">
+    <div class="note-item{% if note.status == 'approved' %} approved{% else %} open-note{% endif %}">
         <p class="note-body">{{ note.body }}</p>
         <div class="parsed-fields">
             {% if note.parsed_who %}<span class="tag">Who: {{ note.parsed_who }}</span>{% endif %}

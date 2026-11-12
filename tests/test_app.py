@@ -487,3 +487,32 @@ def test_accept_with_no_conflict_succeeds(client):
     db.close()
     rv = client.get(f"/offer/{offer['token']}/accept")
     assert b"confirmed to cover" in rv.data
+
+
+# --- PWA + onboarding tour tests ---
+
+def test_manifest_served(client):
+    rv = client.get("/static/manifest.json")
+    assert rv.status_code == 200
+    assert b"AI Shift Manager" in rv.data
+    assert b"standalone" in rv.data
+
+
+def test_icon_served(client):
+    rv = client.get("/static/icon-192.png")
+    assert rv.status_code == 200
+    assert rv.mimetype == "image/png"
+
+
+def test_tour_script_served(client):
+    rv = client.get("/static/tour.js")
+    assert rv.status_code == 200
+    assert b"asm_tour_done" in rv.data
+
+
+def test_base_template_includes_manifest_and_tour(client):
+    login(client)
+    rv = client.get("/")
+    assert b"manifest.json" in rv.data
+    assert b"tour.js" in rv.data
+    assert b"open-note" in rv.data
