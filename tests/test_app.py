@@ -300,3 +300,114 @@ def test_email_disabled_in_test(client):
     from app.notifications import send_swap_notification
     result = send_swap_notification("Test", "test@example.com", "note", "Manager")
     assert result is False
+
+
+# --- Coverage cascade tests ---
+
+def _get_open_note_id(client):
+    rv = client.get("/")
+    db = models_module.get_db()
+    note = db.execute(
+        "SELECT * FROM notes WHERE status = 'open' AND user_id = "
+        "(SELECT id FROM users WHERE username='demo') LIMIT 1"
+    ).fetchone()
+    db.close()
+    return note["id"], note["parsed_who"]
+
+
+def test_start_cascade_creates_pending_offer(client):
+    login(client)
+    note_id, _ = _get_open_note_id(client)
+    rv = client.post(f"/start-cascade/{note_id}", follow_redirects=True)
+    assert rv.status_code == 200
+    assert b"Start coverage cascade" in rv.data
+    db = models_module.get_db()
+    offers = db.execute("SELECT * FROM coverage_offers WHERE note_id = ?", (note_id,)).fetchall()
+    db.close()
+    assert len(offers) == 1
+    assert offers[0]["status"] == "pending"
+    assert offers[0]["token"]
+
+
+def test_cascade_accepts_and_covers_shift(client):
+    login(client)
+    note_id, _ = _get_open_note_id(client)
+    client.post(f"/start-cascade/{note_id}", follow_redirects=True)
+    db = models_module.get_db()
+    offer = db.execute("SELECT * FROM coverage_offers WHERE note_id = ?", (note_id,)).fetchone()
+    db.close()
+    rv = client.get(f"/offer/{offer['token']}/accept")
+    assert rv.status_code == 200
+    assert b"confirmed to cover" in rv.data
+    db = models_module.get_db()
+    note = db.execute("SELECT * FROM notes WHERE id = ?", (note_id,)).fetchone()
+    updated = db.execute("SELECT * FROM coverage_offers WHERE id = ?", (offer["id"],)).fetchone()
+    db.close()
+    assert note["status"] == "approved"
+    assert note["assigned_to"] == offer["employee_name"]
+    assert updated["status"] == "accepted"
+
+
+def test_cascade_decline_advances_to_next_candidate(client):
+    login(client)
+    note_id, parsed_who = _get_open_note_id(client)
+    client.post(f"/start-cascade/{note_id}", follow_redirects=True)
+    db = models_module.get_db()
+    first = db.execute("SELECT * FROM coverage_offers WHERE note_id = ?", (note_id,)).fetchone()
+    db.close()
+    rv = client.get(f"/offer/{first['token']}/decline")
+    assert rv.status_code == 200
+    assert b"passed to the next available candidate" in rv.data
+    db = models_module.get_db()
+    offers = db.execute(
+        "SELECT * FROM coverage_offers WHERE note_id = ? ORDER BY id", (note_id,)
+    ).fetchall()
+    note = db.execute("SELECT * FROM notes WHERE id = ?", (note_id,)).fetchone()
+    db.close()
+    assert len(offers) == 2
+    assert offers[0]["status"] == "declined"
+    assert offers[1]["status"] == "pending"
+    assert offers[1]["employee_name"] != offers[0]["employee_name"]
+    assert note["status"] == "open"  # not covered yet
+
+
+def test_cascade_excludes_declined_and_unavailable(client):
+    login(client)
+    # Note: "Tony has a dentist appointment Friday" -> excludes Tony (who is out)
+    # and Tony is also unavailable Friday, but others remain.
+    db = models_module.get_db()
+    note = db.execute(
+        "SELECT * FROM notes WHERE status='open' AND parsed_when='friday' LIMIT 1"
+    ).fetchone()
+    db.close()
+    assert note is not None
+    client.post(f"/start-cascade/{note['id']}", follow_redirects=True)
+    db = models_module.get_db()
+    offer = db.execute("SELECT * FROM coverage_offers WHERE note_id = ?", (note["id"],)).fetchone()
+    db.close()
+    # Offer must not go to Tony Walker (unavailable Friday / the one out)
+    assert offer["employee_name"] != "Tony Walker"
+
+
+def test_cascade_offer_link_invalid_token(client):
+    rv = client.get("/offer/not-a-real-token/accept")
+    assert rv.status_code == 200
+    assert b"invalid or has expired" in rv.data
+
+
+def test_cascade_accept_twice_is_late(client):
+    login(client)
+    note_id, _ = _get_open_note_id(client)
+    client.post(f"/start-cascade/{note_id}", follow_redirects=True)
+    db = models_module.get_db()
+    offer = db.execute("SELECT * FROM coverage_offers WHERE note_id = ?", (note_id,)).fetchone()
+    db.close()
+    client.get(f"/offer/{offer['token']}/accept")
+    rv = client.get(f"/offer/{offer['token']}/accept")
+    assert b"already handled" in rv.data or b"already responded" in rv.data
+
+
+def test_login_page_has_hero(client):
+    rv = client.get("/login")
+    assert rv.status_code == 200
+    assert b"Never chase shift coverage again" in rv.data

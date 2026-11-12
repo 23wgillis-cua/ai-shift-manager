@@ -19,6 +19,18 @@
     .email-status { font-size: 0.75rem; color: #888; margin-top: 0.25rem; }
     .parsed-fields { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-bottom: 0.5rem; }
     .approve-section { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px solid #1a2634; }
+    .cascade-section { margin-top: 0.75rem; padding-top: 0.75rem; border-top: 1px dashed #1a2634; }
+    .btn-outline {
+        background: transparent; color: #4a9eff; border: 1px solid #4a9eff;
+        border-radius: 6px; padding: 0.45rem 0.9rem; font-size: 0.8rem;
+        cursor: pointer; font-weight: 600; transition: all 0.15s ease;
+    }
+    .btn-outline:hover { background: #4a9eff; color: #fff; }
+    .offer-status { font-size: 0.8rem; margin-top: 0.5rem; }
+    .offer-status .pending { color: #ffb84d; }
+    .offer-status .accepted { color: #8bc34a; }
+    .offer-status .declined { color: #ff6a6a; }
+    .offer-status .cancelled { color: #777; }
     .approve-row { display: flex; gap: 0.5rem; }
     .approve-row select { flex: 1; }
     .empty { text-align: center; color: #444; padding: 2rem; font-size: 0.9rem; }
@@ -107,6 +119,32 @@
                 <p class="filter-note">{{ all_employees|length - available_employees[note.id]|length }} employee(s) excluded by availability for this day.</p>
                 {% endif %}
             </form>
+            <div class="cascade-section">
+                <p style="font-size:0.8rem;color:#8899aa;margin-bottom:0.5rem;">
+                    Or let the system handle it: emails the best-fit candidate with
+                    Accept / Decline links, and moves down the ranked list on each decline.
+                </p>
+                <form method="POST" action="/start-cascade/{{ note.id }}">
+                    <button type="submit" class="btn-outline">Start coverage cascade</button>
+                </form>
+                {% if note_offers.get(note.id) %}
+                <div class="offer-status">
+                    {% for o in note_offers[note.id] %}
+                    <div>
+                        {% if o.status == 'pending' %}
+                            <span class="pending">&#9203; Offer sent to {{ o.employee_name }} - awaiting response</span>
+                        {% elif o.status == 'accepted' %}
+                            <span class="accepted">&#9989; Accepted by {{ o.employee_name }}</span>
+                        {% elif o.status == 'declined' %}
+                            <span class="declined">&#10060; Declined by {{ o.employee_name }}</span>
+                        {% else %}
+                            <span class="cancelled">&#8226; {{ o.employee_name }} - cancelled</span>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
         </div>
         {% endif %}
     </div>

@@ -83,6 +83,20 @@ def init_db():
         )
     """)
 
+    db.execute("""
+        CREATE TABLE IF NOT EXISTS coverage_offers (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            note_id INTEGER NOT NULL,
+            employee_name TEXT NOT NULL,
+            employee_email TEXT,
+            status TEXT DEFAULT 'pending',
+            token TEXT UNIQUE NOT NULL,
+            created_at TEXT NOT NULL,
+            responded_at TEXT,
+            FOREIGN KEY (note_id) REFERENCES notes (id)
+        )
+    """)
+
     # --- Seed or migrate ---
     user_count = db.execute("SELECT COUNT(*) FROM users").fetchone()[0]
     if user_count == 0:

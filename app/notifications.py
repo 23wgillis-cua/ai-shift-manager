@@ -45,6 +45,40 @@ def send_swap_notification(assigned_name, assigned_email, note_body, manager_nam
         return False
 
 
+def send_coverage_offer(name, email, note_body, accept_url, decline_url):
+    """Send a coverage offer email with Accept / Decline links.
+
+    Returns True on success, False on failure or if email is missing.
+    """
+    if not ses_client or not email:
+        return False
+    subject = "Can you cover this shift? - AI Shift Manager"
+    body = (
+        f"Hi {name},\n\n"
+        f"A shift needs coverage and you are the best available fit.\n\n"
+        f"Details:\n"
+        f"  {note_body}\n\n"
+        f"Can you take this shift?\n\n"
+        f"Accept: {accept_url}\n"
+        f"Decline: {decline_url}\n\n"
+        f"If you decline, the next best-fit candidate will be offered the shift.\n"
+        f"- AI Shift Manager\n"
+        f"CUA Busch School AI Vibe Coding Contest, Fall 2026"
+    )
+    try:
+        ses_client.send_email(
+            Source=SES_FROM,
+            Destination={"ToAddresses": [email]},
+            Message={
+                "Subject": {"Data": subject},
+                "Body": {"Text": {"Data": body}},
+            },
+        )
+        return True
+    except ClientError:
+        return False
+
+
 def send_swap_sms(assigned_name, assigned_phone, note_body):
     """Send an SMS notification via SNS when a swap is approved.
 

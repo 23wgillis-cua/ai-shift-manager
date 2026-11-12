@@ -25,6 +25,42 @@
             max-width: 90vw;
             box-shadow: 0 4px 24px rgba(0,0,0,0.3);
         }
+        .wrap {
+            display: flex;
+            gap: 3rem;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            padding: 1rem;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        .hero { max-width: 480px; }
+        .hero h1 {
+            font-size: 1.9rem;
+            color: #fff;
+            font-weight: 700;
+            margin-bottom: 0.75rem;
+            letter-spacing: -0.5px;
+        }
+        .hero p { color: #9aa8b8; font-size: 0.95rem; margin-bottom: 1rem; }
+        .hero ul { list-style: none; }
+        .hero li {
+            color: #cdd8e5;
+            font-size: 0.9rem;
+            padding: 0.3rem 0;
+        }
+        .hero li::before {
+            content: "\2713";
+            color: #4a9eff;
+            font-weight: 700;
+            margin-right: 0.6rem;
+        }
+        @media (max-width: 820px) {
+            .wrap { flex-direction: column-reverse; }
+            .hero { text-align: center; }
+            .hero ul { text-align: left; }
+        }
         .login-box h1 {
             font-size: 1.5rem;
             color: #4a9eff;
@@ -100,6 +136,21 @@
     </style>
 </head>
 <body>
+    <div class="wrap">
+    <div class="hero">
+        <h1>Never chase shift coverage again</h1>
+        <p>Type a plain-English note &mdash; <em>"Mike has a funeral Wednesday and can't
+        come to work"</em> &mdash; and AI Shift Manager parses it, ranks the best-fit
+        candidate, emails them an offer they can accept or decline, and works down
+        the list until the shift is covered. Built for 24/7 operations:
+        security, healthcare, facilities.</p>
+        <ul>
+            <li>AI parses notes into structured scheduling constraints</li>
+            <li>Best-fit coverage ranking with automatic offer cascade</li>
+            <li>Email notifications with one-click Accept / Decline</li>
+            <li>Calendar, dashboard, audit log, CSV export</li>
+        </ul>
+    </div>
     <div class="login-box">
         <h1>AI Shift Manager</h1>
         <p class="subtitle">Sign in to manage your shifts</p>
@@ -121,6 +172,7 @@
         <p class="alt-link"><a href="/reset-password">Forgot password?</a></p>
         <p class="alt-link" style="margin-top: 0.5rem; font-size: 0.8rem; color: #556677;">Demo account: <strong>demo</strong> / <strong>demo</strong></p>
         <p class="footer">CUA Busch School AI Vibe Coding Contest, Fall 2026</p>
+    </div>
     </div>
 </body>
 </html>

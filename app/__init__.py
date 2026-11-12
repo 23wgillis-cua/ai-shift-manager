@@ -19,6 +19,7 @@ import app.models as models_module
 from app.notifications import send_swap_notification, send_swap_sms
 from app.note_parser import parse_note
 from app.llm_parser import parse_note_with_llm, recommend_coverage
+from app import cascade
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", "dev-secret-key-change-in-production")
@@ -103,10 +104,17 @@ def index():
         else:
             available_employees[note["id"]] = all_employees
 
+    # Coverage cascade offer status for open notes
+    note_offers = {}
+    for note in notes:
+        if note["status"] == "open":
+            note_offers[note["id"]] = cascade.get_note_offers(note["id"])
+
     db.close()
     return render_template(
         "index.html", user=user, notes=notes, all_employees=all_employees,
         available_employees=available_employees, recommendations=recommendations,
+        note_offers=note_offers,
     )
 
 
@@ -197,6 +205,33 @@ def approve_note(note_id):
 # ---------------------------------------------------------------------------
 # Team / availability
 # ---------------------------------------------------------------------------
+
+@app.route("/start-cascade/<int:note_id>", methods=["POST"])
+def start_cascade(note_id):
+    """Send the best-fit coverage offer email chain for an open note."""
+    if "user_id" not in session:
+        return redirect(url_for("login"))
+    db = get_db()
+    user = db.execute("SELECT * FROM users WHERE id = ?", (session["user_id"],)).fetchone()
+    demo = bool(user and user["role"] == "demo")
+    db.close()
+    cascade.start_cascade(note_id, session["user_id"], demo)
+    return redirect(url_for("index"))
+
+
+@app.route("/offer/<token>/accept")
+def offer_accept(token):
+    """Public endpoint: employee accepts a coverage offer from their email."""
+    result = cascade.respond_to_offer(token, "accept")
+    return render_template("offer_response.html", result=result)
+
+
+@app.route("/offer/<token>/decline")
+def offer_decline(token):
+    """Public endpoint: employee declines; the next candidate is notified."""
+    result = cascade.respond_to_offer(token, "decline")
+    return render_template("offer_response.html", result=result)
+
 
 @app.route("/availability", methods=["GET", "POST"])
 def availability():
